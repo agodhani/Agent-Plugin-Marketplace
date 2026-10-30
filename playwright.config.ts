@@ -14,12 +14,13 @@ export default defineConfig({
   webServer: {
     // Run against a production build: deterministic and immune to dev-mode
     // compile stalls and Fast-Refresh reloads.
-    command: "rm -rf .test-data && npm run build && npm run start -- -p 3100",
+    command: "rm -rf .test-data .next-test && npm run build && npm run start -- -p 3100",
     url: "http://localhost:3100",
     reuseExistingServer: false,
     timeout: 300_000,
     env: {
       MARKETPLACE_DATA_DIR: ".test-data",
+      NEXT_DIST_DIR: ".next-test",
     },
   },
 });
