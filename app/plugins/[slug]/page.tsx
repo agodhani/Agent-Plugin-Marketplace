@@ -8,9 +8,11 @@ import {
   getPluginVersions,
   latestSubmissionForPlugin,
   myPlaybooks,
+  myReview,
   myTeams,
   pendingSubmissionsForPlugin,
   playbooksContainingPlugin,
+  reviewsForPlugin,
 } from "@/lib/queries";
 import { RiskBadge, StatusBadge, TypeBadge, TypeIcon, VersionChip } from "@/components/badges";
 import { CopyButton, ShareButton } from "@/components/copy-button";
@@ -18,6 +20,9 @@ import { Tabs } from "@/components/tabs";
 import { Markdown } from "@/components/markdown";
 import { FaqAccordion } from "@/components/faq-accordion";
 import { TeamUsageToggle } from "@/components/team-usage-toggle";
+import { StarRow } from "@/components/stars";
+import { ReviewForm } from "@/components/review-form";
+import { Star } from "lucide-react";
 import { AddToPlaybook } from "@/components/add-to-playbook";
 import { AddToTrayButton } from "@/components/tray";
 import { describeAudit } from "@/lib/audit";
@@ -45,6 +50,8 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
   const userTeams = user ? myTeams(user.id) : [];
   const usageTeams = userTeams.map((t) => ({ ...t, used: p.teams.some((x) => x.id === t.id) }));
   const containing = playbooksContainingPlugin(p.id);
+  const reviews = reviewsForPlugin(p.id);
+  const mine = user ? myReview(p.id, user.id) : null;
   const myBooks = user
     ? myPlaybooks(user.id).map((b) => ({ ...b, contains: containing.some((c) => c.id === b.id) }))
     : [];
@@ -191,6 +198,43 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
                 ),
               },
               {
+                id: "reviews",
+                label: (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Star className="h-3.5 w-3.5" /> Reviews ({reviews.length})
+                  </span>
+                ),
+                content: (
+                  <div className="space-y-4">
+                    {user ? (
+                      <ReviewForm pluginId={p.id} initial={mine ? { rating: mine.rating, body: mine.body } : undefined} />
+                    ) : (
+                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        <a href="/login" className="font-medium text-indigo-600 hover:underline">Log in</a> to leave a review.
+                      </p>
+                    )}
+                    {reviews.length === 0 ? (
+                      <p className="text-sm text-slate-500">No reviews yet — be the first.</p>
+                    ) : (
+                      <ul className="space-y-3">
+                        {reviews.map((r) => (
+                          <li key={r.id} className="rounded-xl border border-slate-200 p-4">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium text-slate-800">{r.user_name}</span>
+                              <span className="flex items-center gap-2">
+                                <StarRow avg={r.rating} count={1} />
+                                <span className="text-xs text-slate-400">{fmtDate(r.created_at)}</span>
+                              </span>
+                            </div>
+                            {r.body && <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{r.body}</p>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ),
+              },
+              {
                 id: "activity",
                 label: (
                   <span className="inline-flex items-center gap-1.5">
@@ -247,6 +291,7 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-slate-500">Author</dt><dd className="font-medium text-slate-800">{p.author_name}</dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Downloads</dt><dd className="font-medium text-slate-800">{p.downloads}</dd></div>
+              <div className="flex items-center justify-between"><dt className="text-slate-500">Rating</dt><dd><StarRow avg={p.rating_avg} count={p.rating_count} /></dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Published</dt><dd className="font-medium text-slate-800">{fmtDate(p.created_at)}</dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Updated</dt><dd className="font-medium text-slate-800">{fmtDate(p.updated_at)}</dd></div>
             </dl>

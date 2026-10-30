@@ -534,3 +534,30 @@ export function seedPlaybooksIfEmpty(db: DatabaseSync) {
       JSON.stringify({ items: b.plugins.length }), daysAgo(10));
   }
 }
+
+export function seedReviewsIfEmpty(db: DatabaseSync) {
+  const count = (db.prepare(`SELECT COUNT(*) c FROM reviews`).get() as { c: number }).c;
+  if (count > 0) return;
+  const uid = (email: string) => (db.prepare(`SELECT id FROM users WHERE email = ?`).get(email) as { id: number }).id;
+  const pid = (slug: string) =>
+    (db.prepare(`SELECT id FROM plugins WHERE slug = ?`).get(slug) as { id: number } | undefined)?.id;
+  const ins = db.prepare(
+    `INSERT OR IGNORE INTO reviews (plugin_id, user_id, rating, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`
+  );
+  const seeds: [string, string, number, string, number][] = [
+    ["github-mcp", "alice@acme.dev", 5, "Indispensable — PR triage went from hours to minutes.", 30],
+    ["github-mcp", "bob@acme.dev", 4, "Solid. Would love a releases tool too.", 20],
+    ["github-mcp", "priya@acme.dev", 5, "Works flawlessly with GHE once you set the API URL.", 12],
+    ["code-review-assistant", "bob@acme.dev", 5, "The four-pass rubric catches things I miss every time.", 28],
+    ["code-review-assistant", "admin@acme.dev", 4, "Great defaults; we forked the checklist for our stack.", 15],
+    ["postgres-mcp", "alice@acme.dev", 4, "Read-only by design — exactly what we needed.", 10],
+    ["secret-linter", "alice@acme.dev", 5, "Caught a leaked AWS key on day one. Ship it.", 22],
+    ["deploy-automation", "bob@acme.dev", 3, "Powerful but scary — keep it on dry-run until you trust it.", 18],
+    ["pr-summarizer", "priya@acme.dev", 4, "Reviewer checklists are a nice touch.", 8],
+    ["warehouse-sync", "priya@acme.dev", 5, "Exports to parquet saved my week.", 6],
+  ];
+  for (const [slug, email, rating, body, days] of seeds) {
+    const pluginId = pid(slug);
+    if (pluginId) ins.run(pluginId, uid(email), rating, body, daysAgo(days), daysAgo(days));
+  }
+}

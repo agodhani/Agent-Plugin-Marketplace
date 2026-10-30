@@ -445,3 +445,20 @@ export async function createPlaybookFromTrayAction(name: string, pluginIds: numb
   audit(user, "playbook_created", "playbook", pbId, cleanName, { items: valid.length, source: "tray" });
   return { slug };
 }
+
+export async function upsertReviewAction(pluginId: number, rating: number, body: string): Promise<{ error?: string; ok?: boolean }> {
+  const user = await requireUser();
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return { error: "Pick a rating from 1 to 5 stars." };
+  const db = getDb();
+  const p = db.prepare(`SELECT name, slug, status FROM plugins WHERE id = ?`).get(pluginId) as
+    | { name: string; slug: string; status: string }
+    | undefined;
+  if (!p || p.status !== "approved") return { error: "Plugin not found." };
+  db.prepare(
+    `INSERT INTO reviews (plugin_id, user_id, rating, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(plugin_id, user_id) DO UPDATE SET rating = excluded.rating, body = excluded.body, updated_at = excluded.updated_at`
+  ).run(pluginId, user.id, rating, body.trim(), now(), now());
+  audit(user, "review_posted", "plugin", pluginId, p.name, { rating });
+  revalidatePath(`/plugins/${p.slug}`);
+  return { ok: true };
+}

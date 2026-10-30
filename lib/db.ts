@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
-import { seedIfEmpty, seedPlaybooksIfEmpty } from "./seed";
+import { seedIfEmpty, seedPlaybooksIfEmpty, seedReviewsIfEmpty } from "./seed";
 import path from "node:path";
 
 const DATA_DIR = process.env.MARKETPLACE_DATA_DIR ? path.resolve(process.env.MARKETPLACE_DATA_DIR) : path.join(process.cwd(), "data");
@@ -110,6 +110,16 @@ CREATE TABLE IF NOT EXISTS playbook_items (
   created_at TEXT NOT NULL,
   PRIMARY KEY (playbook_id, plugin_id)
 );
+CREATE TABLE IF NOT EXISTS reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  plugin_id INTEGER NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+  body TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(plugin_id, user_id)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   actor_id INTEGER REFERENCES users(id),
@@ -158,6 +168,7 @@ export function getDb(): DatabaseSync {
     globalForDb.__agenthubDb = db;
     seedIfEmpty(db, UPLOAD_DIR);
     seedPlaybooksIfEmpty(db);
+    seedReviewsIfEmpty(db);
   }
   return globalForDb.__agenthubDb;
 }

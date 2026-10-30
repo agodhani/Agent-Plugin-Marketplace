@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Download, Users } from "lucide-react";
 import { RiskBadge, TypeBadge, TypeIcon, VersionChip } from "./badges";
 import { AddToTrayButton } from "./tray";
+import { StarRow } from "./stars";
 import { fmtDate } from "@/lib/utils";
 import type { PluginListItem } from "@/lib/queries";
 
@@ -49,6 +50,7 @@ export function PluginCard({ p }: { p: PluginListItem }) {
       )}
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
         <span className="flex items-center gap-3">
+          <StarRow avg={p.rating_avg} count={p.rating_count} />
           <span className="inline-flex items-center gap-1" title="Downloads">
             <Download className="h-3.5 w-3.5" /> {p.downloads}
           </span>

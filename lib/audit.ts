@@ -35,6 +35,7 @@ export function describeAudit(action: string): string {
     playbook_deleted: "deleted a playbook",
     playbook_item_added: "added a plugin to a playbook",
     playbook_item_removed: "removed a plugin from a playbook",
+    review_posted: "posted a review",
     user_registered: "registered an account",
   };
   return map[action] ?? action.replaceAll("_", " ");

@@ -13,6 +13,8 @@ export interface PluginListItem {
   downloads: number;
   updated_at: string;
   author_name: string;
+  rating_avg: number;
+  rating_count: number;
   tags: string[];
   teams: { id: number; name: string }[];
 }
@@ -103,8 +105,13 @@ function attachTagsAndTeams(rows: Omit<PluginListItem, "tags" | "teams">[]): Plu
       `SELECT tu.plugin_id, t.id, t.name FROM team_usage tu JOIN teams t ON t.id = tu.team_id WHERE tu.plugin_id IN (${ph})`
     )
     .all(...ids) as { plugin_id: number; id: number; name: string }[];
+  const ratingRows = db
+    .prepare(`SELECT plugin_id, AVG(rating) AS avg, COUNT(*) AS c FROM reviews WHERE plugin_id IN (${ph}) GROUP BY plugin_id`)
+    .all(...ids) as unknown as { plugin_id: number; avg: number; c: number }[];
   return rows.map((r) => ({
     ...r,
+    rating_avg: ratingRows.find((x) => x.plugin_id === r.id)?.avg ?? 0,
+    rating_count: ratingRows.find((x) => x.plugin_id === r.id)?.c ?? 0,
     tags: tagRows.filter((t) => t.plugin_id === r.id).map((t) => t.tag),
     teams: teamRows.filter((t) => t.plugin_id === r.id).map((t) => ({ id: t.id, name: t.name })),
   }));
@@ -381,4 +388,34 @@ export function playbooksContainingPlugin(pluginId: number): { id: number; slug:
        JOIN playbook_items pi ON pi.playbook_id = pb.id WHERE pi.plugin_id = ? ORDER BY pb.name`
     )
     .all(pluginId) as unknown as { id: number; slug: string; name: string; author_id: number }[];
+}
+
+export interface ReviewRow {
+  id: number;
+  plugin_id: number;
+  user_id: number;
+  user_name: string;
+  rating: number;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function reviewsForPlugin(pluginId: number): ReviewRow[] {
+  return getDb()
+    .prepare(
+      `SELECT r.*, u.name AS user_name FROM reviews r JOIN users u ON u.id = r.user_id
+       WHERE r.plugin_id = ? ORDER BY r.created_at DESC`
+    )
+    .all(pluginId) as unknown as ReviewRow[];
+}
+
+export function myReview(pluginId: number, userId: number): ReviewRow | null {
+  const r = getDb()
+    .prepare(
+      `SELECT r.*, u.name AS user_name FROM reviews r JOIN users u ON u.id = r.user_id
+       WHERE r.plugin_id = ? AND r.user_id = ?`
+    )
+    .get(pluginId, userId) as unknown as ReviewRow | undefined;
+  return r ?? null;
 }
