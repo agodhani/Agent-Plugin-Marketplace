@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState } from "react";
 import Link from "next/link";
 import { loginAction, registerAction, type ActionState } from "@/lib/actions";

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 export function Tabs({
   tabs,
@@ -9,28 +11,27 @@ export function Tabs({
   tabs: { id: string; label: ReactNode; content: ReactNode }[];
   initial?: string;
 }) {
-  const [active, setActive] = useState(initial ?? tabs[0]?.id);
-  const current = tabs.find((t) => t.id === active) ?? tabs[0];
   return (
-    <div>
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex gap-1 overflow-x-auto">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActive(t.id)}
-              className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition ${
-                t.id === current?.id
-                  ? "border-indigo-600 text-indigo-700"
-                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-      <div className="pt-5">{current?.content}</div>
-    </div>
+    <TabsPrimitive.Root defaultValue={initial ?? tabs[0]?.id}>
+      <TabsPrimitive.List className="flex gap-1 overflow-x-auto border-b border-slate-200">
+        {tabs.map((t) => (
+          <TabsPrimitive.Trigger
+            key={t.id}
+            value={t.id}
+            className={cn(
+              "-mb-px whitespace-nowrap border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-500 transition",
+              "hover:border-slate-300 hover:text-slate-800 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-700"
+            )}
+          >
+            {t.label}
+          </TabsPrimitive.Trigger>
+        ))}
+      </TabsPrimitive.List>
+      {tabs.map((t) => (
+        <TabsPrimitive.Content key={t.id} value={t.id} className="pt-5 data-[state=inactive]:hidden">
+          {t.content}
+        </TabsPrimitive.Content>
+      ))}
+    </TabsPrimitive.Root>
   );
 }

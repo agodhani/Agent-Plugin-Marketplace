@@ -37,3 +37,15 @@ test.describe("ui / styling", () => {
     expect(bg).toContain("gradient");
   });
 });
+
+test("radix tabs switch content and FAQ accordion expands", async ({ page }) => {
+  await page.goto("/plugins/github-mcp");
+  // tabs (shadcn/radix) — switch to Versions and back
+  await page.getByRole("tab", { name: /Versions/ }).click();
+  await expect(page.getByText("v2.0.1").first()).toBeVisible();
+  await page.getByRole("tab", { name: /FAQ/ }).click();
+  const q = page.getByRole("button", { name: /GitHub Enterprise/i }).first();
+  await expect(q).toBeVisible();
+  if (await page.getByText("GITHUB_API_URL").isHidden()) await q.click();
+  await expect(page.getByText("GITHUB_API_URL")).toBeVisible();
+});

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState } from "react";
 import { submitPluginAction, type ActionState } from "@/lib/actions";
 import { PERMISSIONS, PLUGIN_TYPES, TYPE_META } from "@/lib/utils";
