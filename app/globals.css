@@ -4,3 +4,27 @@
 :root {
   color-scheme: light;
 }
+
+/* --- visual polish: warmth, texture, depth --- */
+body {
+  background-image:
+    radial-gradient(1200px 500px at 80% -10%, rgb(99 102 241 / 0.06), transparent 60%),
+    radial-gradient(900px 400px at -10% 10%, rgb(217 119 6 / 0.05), transparent 55%);
+}
+::selection {
+  background: rgb(99 102 241 / 0.25);
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f8fafc; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* card accent strip used on catalog cards (set --accent per type) */
+.card-accent { position: relative; }
+.card-accent::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 0.75rem 0.75rem 0 0;
+  background: var(--accent, transparent);
+}

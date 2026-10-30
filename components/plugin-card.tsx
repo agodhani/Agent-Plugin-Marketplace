@@ -8,6 +8,13 @@ import { StarRow } from "./stars";
 import { fmtDate } from "@/lib/utils";
 import type { PluginListItem } from "@/lib/queries";
 
+const ACCENTS: Record<string, string> = {
+  skill: "linear-gradient(90deg,#8b5cf6,#c4b5fd)",
+  mcp: "linear-gradient(90deg,#0ea5e9,#7dd3fc)",
+  plugin: "linear-gradient(90deg,#10b981,#6ee7b7)",
+  documentation: "linear-gradient(90deg,#d97706,#fcd34d)",
+};
+
 const TYPE_ICON_BG: Record<string, string> = {
   skill: "bg-violet-100 text-violet-600",
   mcp: "bg-sky-100 text-sky-600",
@@ -19,7 +26,8 @@ export function PluginCard({ p }: { p: PluginListItem }) {
   return (
     <Link
       href={`/plugins/${p.slug}`}
-      className="group flex flex-col rounded-xl border border-slate-200 bg-white p-4 transition hover:border-indigo-200 hover:shadow-md"
+      style={{ ["--accent" as string]: ACCENTS[p.type] }}
+      className="card-accent group flex flex-col rounded-xl border border-slate-200 bg-white p-4 pt-5 transition hover:border-indigo-200 hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">

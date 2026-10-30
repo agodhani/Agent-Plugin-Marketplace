@@ -46,8 +46,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
 
   return (
     <div className="space-y-10">
-      <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-700 px-6 py-10 text-white sm:px-10">
-        <h1 className="text-2xl font-bold sm:text-3xl">Agent Plugin Marketplace</h1>
+      <section className="relative overflow-hidden rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700 px-6 py-12 text-white shadow-lg shadow-indigo-900/20 sm:px-10">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-1/3 h-56 w-56 rounded-full bg-fuchsia-400/20 blur-3xl" />
+        <h1 className="relative text-3xl font-extrabold tracking-tight sm:text-4xl">Agent Plugin Marketplace</h1>
         <p className="mt-2 max-w-2xl text-indigo-100">
           Discover skills, MCP servers, plugins and documentation for your agents — reviewed, scanned and shared across
           Acme teams.
