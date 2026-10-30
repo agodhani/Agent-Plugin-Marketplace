@@ -1,0 +1,308 @@
+import { getDb } from "./db";
+
+export interface PluginListItem {
+  id: number;
+  slug: string;
+  name: string;
+  type: string;
+  summary: string;
+  status: string;
+  risk_level: string;
+  risk_score: number;
+  current_version: string;
+  downloads: number;
+  updated_at: string;
+  author_name: string;
+  tags: string[];
+  teams: { id: number; name: string }[];
+}
+
+export interface PluginDetail extends PluginListItem {
+  about: string;
+  readme: string;
+  faq: { q: string; a: string }[];
+  permissions: string[];
+  install_command: string;
+  author_id: number;
+  created_at: string;
+}
+
+export interface VersionRow {
+  id: number;
+  plugin_id: number;
+  version: string;
+  changelog: string;
+  file_path: string;
+  created_by: number | null;
+  created_at: string;
+  author_name: string | null;
+}
+
+export interface SubmissionRow {
+  id: number;
+  plugin_id: number | null;
+  submitted_by: number;
+  submitter_name: string;
+  kind: string;
+  version: string;
+  changelog: string;
+  status: string;
+  validation_report: string;
+  security_report: string;
+  risk_score: number;
+  risk_level: string;
+  manifest: string;
+  file_path: string;
+  reviewer_id: number | null;
+  reviewer_name: string | null;
+  review_notes: string;
+  created_at: string;
+  reviewed_at: string | null;
+  plugin_name: string;
+  plugin_slug: string;
+  plugin_type: string;
+}
+
+export interface AuditRow {
+  id: number;
+  actor_name: string;
+  action: string;
+  entity_type: string;
+  entity_id: number | null;
+  entity_name: string;
+  details: string;
+  created_at: string;
+}
+
+export interface TeamRow {
+  id: number;
+  name: string;
+  description: string;
+  member_count: number;
+  member_names: string;
+  plugin_count: number;
+  is_member: number;
+}
+
+const LIST_COLS = `p.id, p.slug, p.name, p.type, p.summary, p.status, p.risk_level, p.risk_score,
+         p.current_version, p.downloads, p.updated_at,
+         COALESCE(u.name, 'unknown') AS author_name`;
+const LIST_SELECT = `SELECT ${LIST_COLS}
+  FROM plugins p LEFT JOIN users u ON u.id = p.author_id`;
+
+function attachTagsAndTeams(rows: Omit<PluginListItem, "tags" | "teams">[]): PluginListItem[] {
+  if (rows.length === 0) return [];
+  const db = getDb();
+  const ids = rows.map((r) => r.id);
+  const ph = ids.map(() => "?").join(",");
+  const tagRows = db
+    .prepare(`SELECT plugin_id, tag FROM plugin_tags WHERE plugin_id IN (${ph})`)
+    .all(...ids) as { plugin_id: number; tag: string }[];
+  const teamRows = db
+    .prepare(
+      `SELECT tu.plugin_id, t.id, t.name FROM team_usage tu JOIN teams t ON t.id = tu.team_id WHERE tu.plugin_id IN (${ph})`
+    )
+    .all(...ids) as { plugin_id: number; id: number; name: string }[];
+  return rows.map((r) => ({
+    ...r,
+    tags: tagRows.filter((t) => t.plugin_id === r.id).map((t) => t.tag),
+    teams: teamRows.filter((t) => t.plugin_id === r.id).map((t) => ({ id: t.id, name: t.name })),
+  }));
+}
+
+export function listPlugins(opts: {
+  q?: string;
+  type?: string;
+  tag?: string;
+  teamId?: number;
+  status?: string;
+  sort?: string;
+}): PluginListItem[] {
+  const where: string[] = ["p.status = ?"];
+  const args: (string | number)[] = [opts.status ?? "approved"];
+  if (opts.q) {
+    where.push("(p.name LIKE ? OR p.summary LIKE ? OR p.slug LIKE ?)");
+    const like = `%${opts.q}%`;
+    args.push(like, like, like);
+  }
+  if (opts.type && opts.type !== "all") {
+    where.push("p.type = ?");
+    args.push(opts.type);
+  }
+  if (opts.tag) {
+    where.push("p.id IN (SELECT plugin_id FROM plugin_tags WHERE tag = ?)");
+    args.push(opts.tag);
+  }
+  if (opts.teamId) {
+    where.push("p.id IN (SELECT plugin_id FROM team_usage WHERE team_id = ?)");
+    args.push(opts.teamId);
+  }
+  const order =
+    opts.sort === "name" ? "p.name ASC" : opts.sort === "downloads" ? "p.downloads DESC" : "p.updated_at DESC";
+  const rows = getDb()
+    .prepare(`${LIST_SELECT} WHERE ${where.join(" AND ")} ORDER BY ${order}`)
+    .all(...args) as unknown as Omit<PluginListItem, "tags" | "teams">[];
+  return attachTagsAndTeams(rows);
+}
+
+export function getPluginBySlug(slug: string): PluginDetail | null {
+  const row = getDb()
+    .prepare(`SELECT ${LIST_COLS}, p.about, p.readme, p.faq, p.permissions, p.install_command, p.author_id, p.created_at
+       FROM plugins p LEFT JOIN users u ON u.id = p.author_id WHERE p.slug = ?`)
+    .get(slug) as unknown as (Omit<PluginListItem, "tags" | "teams"> & {
+    about: string;
+    readme: string;
+    faq: string;
+    permissions: string;
+    install_command: string;
+    author_id: number;
+    created_at: string;
+  }) | undefined;
+  if (!row) return null;
+  const [withMeta] = attachTagsAndTeams([row]);
+  let faq: { q: string; a: string }[] = [];
+  let permissions: string[] = [];
+  try {
+    faq = JSON.parse(row.faq);
+  } catch { /* ignore */ }
+  try {
+    permissions = JSON.parse(row.permissions);
+  } catch { /* ignore */ }
+  return { ...withMeta, about: row.about, readme: row.readme, faq, permissions, install_command: row.install_command, author_id: row.author_id, created_at: row.created_at };
+}
+
+export function getPluginVersions(pluginId: number): VersionRow[] {
+  return getDb()
+    .prepare(
+      `SELECT v.*, u.name AS author_name FROM versions v LEFT JOIN users u ON u.id = v.created_by
+       WHERE v.plugin_id = ? ORDER BY v.created_at DESC, v.id DESC`
+    )
+    .all(pluginId) as unknown as VersionRow[];
+}
+
+export function getPluginAudit(pluginId: number): AuditRow[] {
+  return getDb()
+    .prepare(
+      `SELECT * FROM audit_log WHERE (entity_type = 'plugin' AND entity_id = ?)
+         OR (entity_type = 'submission' AND entity_id IN (SELECT id FROM submissions WHERE plugin_id = ?))
+       ORDER BY created_at DESC, id DESC LIMIT 100`
+    )
+    .all(pluginId, pluginId) as unknown as AuditRow[];
+}
+
+export function listSubmissions(status?: string, userId?: number): SubmissionRow[] {
+  const where: string[] = [];
+  const args: (string | number)[] = [];
+  if (status) {
+    where.push("s.status = ?");
+    args.push(status);
+  }
+  if (userId) {
+    where.push("s.submitted_by = ?");
+    args.push(userId);
+  }
+  const sql = `
+    SELECT s.*, u.name AS submitter_name, r.name AS reviewer_name,
+           COALESCE(p.name, 'deleted plugin') AS plugin_name, COALESCE(p.slug, '') AS plugin_slug, COALESCE(p.type, '') AS plugin_type
+    FROM submissions s
+    JOIN users u ON u.id = s.submitted_by
+    LEFT JOIN users r ON r.id = s.reviewer_id
+    LEFT JOIN plugins p ON p.id = s.plugin_id
+    ${where.length ? "WHERE " + where.join(" AND ") : ""}
+    ORDER BY s.created_at DESC`;
+  return getDb().prepare(sql).all(...args) as unknown as SubmissionRow[];
+}
+
+export function getSubmission(id: number): SubmissionRow | null {
+  const rows = listSubmissions();
+  return rows.find((r) => r.id === id) ?? null;
+}
+
+export function allTags(): { tag: string; count: number }[] {
+  return getDb()
+    .prepare(
+      `SELECT t.tag, COUNT(*) AS count FROM plugin_tags t
+       JOIN plugins p ON p.id = t.plugin_id WHERE p.status = 'approved'
+       GROUP BY t.tag ORDER BY count DESC, t.tag`
+    )
+    .all() as { tag: string; count: number }[];
+}
+
+export function listTeams(userId?: number): TeamRow[] {
+  return getDb()
+    .prepare(
+      `SELECT t.id, t.name, t.description,
+              (SELECT COUNT(*) FROM team_members tm WHERE tm.team_id = t.id) AS member_count,
+              COALESCE((SELECT GROUP_CONCAT(u.name, ', ') FROM team_members tm JOIN users u ON u.id = tm.user_id WHERE tm.team_id = t.id), '') AS member_names,
+              (SELECT COUNT(*) FROM team_usage tu WHERE tu.team_id = t.id) AS plugin_count,
+              COALESCE((SELECT 1 FROM team_members tm WHERE tm.team_id = t.id AND tm.user_id = ?), 0) AS is_member
+       FROM teams t ORDER BY t.name`
+    )
+    .all(userId ?? -1) as unknown as TeamRow[];
+}
+
+export function myTeams(userId: number): { id: number; name: string }[] {
+  return getDb()
+    .prepare(`SELECT t.id, t.name FROM teams t JOIN team_members tm ON tm.team_id = t.id WHERE tm.user_id = ? ORDER BY t.name`)
+    .all(userId) as { id: number; name: string }[];
+}
+
+export function teamPlugins(teamId: number): PluginListItem[] {
+  const rows = getDb()
+    .prepare(`${LIST_SELECT} WHERE p.id IN (SELECT plugin_id FROM team_usage WHERE team_id = ?) ORDER BY p.name`)
+    .all(teamId) as unknown as Omit<PluginListItem, "tags" | "teams">[];
+  return attachTagsAndTeams(rows);
+}
+
+export function mySubmissions(userId: number): SubmissionRow[] {
+  return listSubmissions(undefined, userId);
+}
+
+export function latestSubmissionForPlugin(pluginId: number): SubmissionRow | null {
+  const rows = getDb()
+    .prepare(
+      `SELECT s.*, u.name AS submitter_name, r.name AS reviewer_name,
+              p.name AS plugin_name, p.slug AS plugin_slug, p.type AS plugin_type
+       FROM submissions s
+       JOIN users u ON u.id = s.submitted_by
+       LEFT JOIN users r ON r.id = s.reviewer_id
+       JOIN plugins p ON p.id = s.plugin_id
+       WHERE s.plugin_id = ? ORDER BY s.created_at DESC, s.id DESC LIMIT 1`
+    )
+    .all(pluginId) as unknown as SubmissionRow[];
+  return rows[0] ?? null;
+}
+
+export function pendingSubmissionsForPlugin(pluginId: number): SubmissionRow[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT s.*, u.name AS submitter_name, r.name AS reviewer_name,
+              p.name AS plugin_name, p.slug AS plugin_slug, p.type AS plugin_type
+       FROM submissions s
+       JOIN users u ON u.id = s.submitted_by
+       LEFT JOIN users r ON r.id = s.reviewer_id
+       JOIN plugins p ON p.id = s.plugin_id
+       WHERE s.plugin_id = ? AND s.status = 'pending' ORDER BY s.created_at DESC`
+    )
+    .all(pluginId) as unknown as SubmissionRow[];
+  return rows;
+}
+
+export function recentAudit(limit = 200): AuditRow[] {
+  return getDb()
+    .prepare(`SELECT * FROM audit_log ORDER BY created_at DESC, id DESC LIMIT ?`)
+    .all(limit) as unknown as AuditRow[];
+}
+
+export function adminStats() {
+  const db = getDb();
+  const one = (sql: string) => (db.prepare(sql).get() as { c: number }).c;
+  return {
+    pending: one(`SELECT COUNT(*) c FROM submissions WHERE status = 'pending'`),
+    approved: one(`SELECT COUNT(*) c FROM plugins WHERE status = 'approved'`),
+    rejected: one(`SELECT COUNT(*) c FROM submissions WHERE status = 'rejected'`),
+    users: one(`SELECT COUNT(*) c FROM users`),
+    teams: one(`SELECT COUNT(*) c FROM teams`),
+    downloads: one(`SELECT COALESCE(SUM(downloads),0) c FROM plugins`),
+  };
+}
