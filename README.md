@@ -14,6 +14,8 @@ An agent-agnostic internal marketplace for sharing **skills**, **MCP servers**, 
 - **Browse** — card grid with text search, type filter (skill/MCP/plugin/docs), tag chips, "used by team" filter, sorting
 - **Detail pages** — About / README / FAQ / Versions / Activity tabs, share link, install command, per-version downloads
 - **Teams** — create/join teams; mark plugins your team uses (visible on cards, detail pages and home filter)
+- **Playbooks** — bundle catalog items into named sets with a single `amp playbook install <slug>` command; create/edit/delete, quick-add from any plugin page
+- **Install tray** — collect plugins while browsing, then generate one install command per target (AgentHub CLI, Claude Code `mcp.json`, Cursor, raw zips) — or save the tray straight into a playbook
 - **Auth** — register/login; profile page has an admin toggle for testing
 - **Governance pipeline** — submit → validation scan (manifest, README, archive hygiene) → security scan (exec/network/secrets/fs rules) → risk score from declared permissions + findings → admin approve/reject
 - **Versioning & audit** — semver versions with changelogs; every submit/approve/reject/version/team-mark/download is audit-logged (per-plugin Activity tab + admin audit view)
@@ -26,6 +28,14 @@ npm run dev   # http://localhost:3000
 ```
 
 Data (SQLite + uploaded archives) lives in `data/` — delete it to reseed.
+
+### Tests
+
+```bash
+npm test          # Playwright E2E suite (builds + serves on :3100 against a fresh .test-data db)
+```
+
+26 tests cover browse/search/filters, auth + admin toggle, the submit->scan->review->publish pipeline, versioning, downloads, teams, playbooks and the install tray. CI runs the same suite via `.github/workflows/e2e.yml`.
 
 ### Demo accounts
 

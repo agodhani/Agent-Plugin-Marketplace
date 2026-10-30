@@ -4,3 +4,6 @@ out/
 data/
 *.tsbuildinfo
 .DS_Store
+.test-data/
+test-results/
+playwright-report/

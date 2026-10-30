@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Boxes, ShieldCheck, Upload, Users } from "lucide-react";
+import { Boxes, ListChecks, ShieldCheck, Upload, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { logoutAction } from "@/lib/actions";
 
@@ -20,6 +20,9 @@ export async function Navbar() {
         <nav className="flex flex-1 items-center gap-1 text-sm">
           <Link href="/" className="rounded-md px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
             Browse
+          </Link>
+          <Link href="/playbooks" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+            <ListChecks className="h-3.5 w-3.5" /> Playbooks
           </Link>
           <Link href="/submit" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
             <Upload className="h-3.5 w-3.5" /> Submit

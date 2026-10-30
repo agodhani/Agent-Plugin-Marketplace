@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "50mb",
     },
   },
+  // Allow the dev server to be reached through preview proxies.
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
 };
 
 export default nextConfig;

@@ -485,3 +485,52 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
 
   insAudit.run(null, "system", "user_registered", "user", adminId, "Admin User", "{}", daysAgo(90));
 }
+
+export function seedPlaybooksIfEmpty(db: DatabaseSync) {
+  const count = (db.prepare(`SELECT COUNT(*) c FROM playbooks`).get() as { c: number }).c;
+  if (count > 0) return;
+
+  const uid = (email: string) => (db.prepare(`SELECT id FROM users WHERE email = ?`).get(email) as { id: number }).id;
+  const pid = (slug: string) =>
+    (db.prepare(`SELECT id FROM plugins WHERE slug = ?`).get(slug) as { id: number } | undefined)?.id;
+
+  const ins = db.prepare(
+    `INSERT INTO playbooks (slug, name, description, author_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`
+  );
+  const insItem = db.prepare(
+    `INSERT OR IGNORE INTO playbook_items (playbook_id, plugin_id, position, added_by, created_at) VALUES (?, ?, ?, ?, ?)`
+  );
+  const insAudit = db.prepare(
+    `INSERT INTO audit_log (actor_id, actor_name, action, entity_type, entity_id, entity_name, details, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+
+  const books = [
+    {
+      slug: "frontend-agent-kit",
+      name: "Frontend Agent Kit",
+      description: "Everything a frontend-focused agent needs: code review, PR summaries and GitHub tooling.",
+      author: "alice@acme.dev",
+      plugins: ["code-review-assistant", "pr-summarizer", "github-mcp"],
+    },
+    {
+      slug: "data-agent-stack",
+      name: "Data Agent Stack",
+      description: "Warehouse access and Postgres introspection for data agents, plus the shared GitHub tools.",
+      author: "admin@acme.dev",
+      plugins: ["postgres-mcp", "warehouse-sync", "github-mcp"],
+    },
+  ];
+
+  for (const b of books) {
+    const authorId = uid(b.author);
+    const res = ins.run(b.slug, b.name, b.description, authorId, daysAgo(10), daysAgo(3));
+    const pbId = Number(res.lastInsertRowid);
+    b.plugins.forEach((slug, i) => {
+      const id = pid(slug);
+      if (id) insItem.run(pbId, id, i, authorId, daysAgo(10));
+    });
+    insAudit.run(authorId, b.author.split("@")[0], "playbook_created", "playbook", pbId, b.name,
+      JSON.stringify({ items: b.plugins.length }), daysAgo(10));
+  }
+}

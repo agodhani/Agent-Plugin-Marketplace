@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, Users } from "lucide-react";
 import { RiskBadge, TypeBadge, TypeIcon, VersionChip } from "./badges";
+import { AddToTrayButton } from "./tray";
 import { fmtDate } from "@/lib/utils";
 import type { PluginListItem } from "@/lib/queries";
 
@@ -30,7 +31,10 @@ export function PluginCard({ p }: { p: PluginListItem }) {
             </div>
           </div>
         </div>
-        <RiskBadge level={p.risk_level} />
+        <span className="flex shrink-0 items-center gap-1.5">
+          <RiskBadge level={p.risk_level} />
+          <AddToTrayButton item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }} />
+        </span>
       </div>
       <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-relaxed text-slate-600">{p.summary}</p>
       {p.tags.length > 0 && (

@@ -306,3 +306,79 @@ export function adminStats() {
     downloads: one(`SELECT COALESCE(SUM(downloads),0) c FROM plugins`),
   };
 }
+
+// ---------------- playbooks ----------------
+
+export interface PlaybookListItem {
+  id: number;
+  slug: string;
+  name: string;
+  description: string;
+  author_name: string;
+  author_id: number;
+  item_count: number;
+  types: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlaybookDetail extends PlaybookListItem {
+  items: PluginListItem[];
+}
+
+export function listPlaybooks(opts?: { q?: string }): PlaybookListItem[] {
+  const where: string[] = ["1=1"];
+  const args: string[] = [];
+  if (opts?.q) {
+    where.push("(pb.name LIKE ? OR pb.description LIKE ?)");
+    args.push(`%${opts.q}%`, `%${opts.q}%`);
+  }
+  const rows = getDb()
+    .prepare(
+      `SELECT pb.id, pb.slug, pb.name, pb.description, pb.author_id, pb.created_at, pb.updated_at,
+              COALESCE(u.name, 'unknown') AS author_name,
+              (SELECT COUNT(*) FROM playbook_items pi WHERE pi.playbook_id = pb.id) AS item_count,
+              COALESCE((SELECT GROUP_CONCAT(DISTINCT p.type) FROM playbook_items pi
+                        JOIN plugins p ON p.id = pi.plugin_id WHERE pi.playbook_id = pb.id), '') AS types
+       FROM playbooks pb LEFT JOIN users u ON u.id = pb.author_id
+       WHERE ${where.join(" AND ")} ORDER BY pb.updated_at DESC`
+    )
+    .all(...args) as unknown as (Omit<PlaybookListItem, "types"> & { types: string })[];
+  return rows.map((r) => ({ ...r, types: r.types ? r.types.split(",") : [] }));
+}
+
+export function getPlaybookBySlug(slug: string): PlaybookDetail | null {
+  const pb = getDb()
+    .prepare(
+      `SELECT pb.id, pb.slug, pb.name, pb.description, pb.author_id, pb.created_at, pb.updated_at,
+              COALESCE(u.name, 'unknown') AS author_name,
+              (SELECT COUNT(*) FROM playbook_items pi WHERE pi.playbook_id = pb.id) AS item_count,
+              COALESCE((SELECT GROUP_CONCAT(DISTINCT p.type) FROM playbook_items pi
+                        JOIN plugins p ON p.id = pi.plugin_id WHERE pi.playbook_id = pb.id), '') AS types
+       FROM playbooks pb LEFT JOIN users u ON u.id = pb.author_id WHERE pb.slug = ?`
+    )
+    .get(slug) as unknown as (Omit<PlaybookListItem, "types"> & { types: string }) | undefined;
+  if (!pb) return null;
+  const itemRows = getDb()
+    .prepare(
+      `${LIST_SELECT} JOIN playbook_items pi ON pi.plugin_id = p.id
+       WHERE pi.playbook_id = ? AND p.status = 'approved' ORDER BY pi.position, pi.rowid`
+    )
+    .all(pb.id) as unknown as Omit<PluginListItem, "tags" | "teams">[];
+  return { ...pb, types: pb.types ? pb.types.split(",") : [], items: attachTagsAndTeams(itemRows) };
+}
+
+export function myPlaybooks(userId: number): { id: number; name: string; slug: string }[] {
+  return getDb()
+    .prepare(`SELECT id, name, slug FROM playbooks WHERE author_id = ? ORDER BY name`)
+    .all(userId) as unknown as { id: number; name: string; slug: string }[];
+}
+
+export function playbooksContainingPlugin(pluginId: number): { id: number; slug: string; name: string; author_id: number }[] {
+  return getDb()
+    .prepare(
+      `SELECT pb.id, pb.slug, pb.name, pb.author_id FROM playbooks pb
+       JOIN playbook_items pi ON pi.playbook_id = pb.id WHERE pi.plugin_id = ? ORDER BY pb.name`
+    )
+    .all(pluginId) as unknown as { id: number; slug: string; name: string; author_id: number }[];
+}

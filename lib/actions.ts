@@ -136,6 +136,7 @@ async function extractUpload(file: File): Promise<{ files: ExtractedFile[]; stor
       text: isTextFile(name) && raw.length <= MAX_SCAN_BYTES ? raw.toString("utf8") : null,
     });
   }
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   const storedPath = path.join(UPLOAD_DIR, `sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.zip`);
   fs.writeFileSync(storedPath, buf);
   return { files, storedPath };
@@ -171,8 +172,9 @@ export async function submitPluginAction(_prev: ActionState, formData: FormData)
     if (file.size > MAX_UPLOAD) return { error: "Archive exceeds the 50 MB limit." };
     try {
       ({ files, storedPath } = await extractUpload(file));
-    } catch {
-      return { error: "Could not read the uploaded file — please upload a valid .zip archive." };
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : "invalid archive";
+      return { error: `Could not read the uploaded file (${reason}) — please upload a valid .zip archive.` };
     }
   }
 
@@ -247,8 +249,9 @@ export async function submitVersionAction(pluginId: number, _prev: ActionState, 
     if (file.size > MAX_UPLOAD) return { error: "Archive exceeds the 50 MB limit." };
     try {
       ({ files, storedPath } = await extractUpload(file));
-    } catch {
-      return { error: "Could not read the uploaded file — please upload a valid .zip archive." };
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : "invalid archive";
+      return { error: `Could not read the uploaded file (${reason}) — please upload a valid .zip archive.` };
     }
   }
 
@@ -322,4 +325,123 @@ export async function reviewAction(submissionId: number, decision: "approve" | "
   revalidatePath("/admin");
   revalidatePath(`/plugins/${plugin.slug}`);
   redirect("/admin");
+}
+
+// ---------------- playbooks ----------------
+
+function uniquePlaybookSlug(name: string): string {
+  const db = getDb();
+  const base = slugify(name) || "playbook";
+  let slug = base;
+  let i = 2;
+  while (db.prepare(`SELECT id FROM playbooks WHERE slug = ?`).get(slug)) slug = `${base}-${i++}`;
+  return slug;
+}
+
+function canEditPlaybook(userId: number, isAdmin: number, playbookId: number): boolean {
+  const pb = getDb().prepare(`SELECT author_id FROM playbooks WHERE id = ?`).get(playbookId) as { author_id: number } | undefined;
+  return !!pb && (pb.author_id === userId || !!isAdmin);
+}
+
+function pluginIdsFrom(formData: FormData): number[] {
+  return formData
+    .getAll("items")
+    .map((v) => Number(v))
+    .filter((n) => Number.isInteger(n) && n > 0);
+}
+
+export async function createPlaybookAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const name = str(formData.get("name"));
+  const description = str(formData.get("description"));
+  const items = pluginIdsFrom(formData);
+  if (name.length < 3) return { error: "Playbook name is required (3+ characters)." };
+  if (items.length === 0) return { error: "Pick at least one plugin for the playbook." };
+
+  const db = getDb();
+  const slug = uniquePlaybookSlug(name);
+  const res = db
+    .prepare(`INSERT INTO playbooks (slug, name, description, author_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`)
+    .run(slug, name, description, user.id, now(), now());
+  const pbId = Number(res.lastInsertRowid);
+  const insItem = db.prepare(
+    `INSERT OR IGNORE INTO playbook_items (playbook_id, plugin_id, position, added_by, created_at) VALUES (?, ?, ?, ?, ?)`
+  );
+  items.forEach((pluginId, i) => insItem.run(pbId, pluginId, i, user.id, now()));
+  audit(user, "playbook_created", "playbook", pbId, name, { items: items.length });
+  redirect(`/playbooks/${slug}`);
+}
+
+export async function updatePlaybookAction(playbookId: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  if (!canEditPlaybook(user.id, user.is_admin, playbookId)) return { error: "Only the author or an admin can edit this playbook." };
+  const name = str(formData.get("name"));
+  const description = str(formData.get("description"));
+  const items = pluginIdsFrom(formData);
+  if (name.length < 3) return { error: "Playbook name is required (3+ characters)." };
+  if (items.length === 0) return { error: "Pick at least one plugin for the playbook." };
+
+  const db = getDb();
+  db.prepare(`UPDATE playbooks SET name = ?, description = ?, updated_at = ? WHERE id = ?`).run(name, description, now(), playbookId);
+  db.prepare(`DELETE FROM playbook_items WHERE playbook_id = ?`).run(playbookId);
+  const insItem = db.prepare(
+    `INSERT OR IGNORE INTO playbook_items (playbook_id, plugin_id, position, added_by, created_at) VALUES (?, ?, ?, ?, ?)`
+  );
+  items.forEach((pluginId, i) => insItem.run(playbookId, pluginId, i, user.id, now()));
+  const pb = db.prepare(`SELECT slug, name FROM playbooks WHERE id = ?`).get(playbookId) as { slug: string; name: string };
+  audit(user, "playbook_updated", "playbook", playbookId, pb.name, { items: items.length });
+  redirect(`/playbooks/${pb.slug}`);
+}
+
+export async function deletePlaybookAction(playbookId: number) {
+  const user = await requireUser();
+  if (!canEditPlaybook(user.id, user.is_admin, playbookId)) return { error: "Only the author or an admin can delete this playbook." };
+  const pb = getDb().prepare(`SELECT name FROM playbooks WHERE id = ?`).get(playbookId) as { name: string } | undefined;
+  getDb().prepare(`DELETE FROM playbooks WHERE id = ?`).run(playbookId);
+  audit(user, "playbook_deleted", "playbook", playbookId, pb?.name ?? "playbook");
+  redirect("/playbooks");
+}
+
+export async function togglePlaybookItemAction(playbookId: number, pluginId: number, add: boolean, pluginName: string) {
+  const user = await requireUser();
+  if (!canEditPlaybook(user.id, user.is_admin, playbookId)) return { error: "Only the author or an admin can change this playbook." };
+  const db = getDb();
+  const pb = db.prepare(`SELECT name FROM playbooks WHERE id = ?`).get(playbookId) as { name: string } | undefined;
+  if (add) {
+    const max = db.prepare(`SELECT COALESCE(MAX(position), 0) m FROM playbook_items WHERE playbook_id = ?`).get(playbookId) as { m: number };
+    db.prepare(
+      `INSERT OR IGNORE INTO playbook_items (playbook_id, plugin_id, position, added_by, created_at) VALUES (?, ?, ?, ?, ?)`
+    ).run(playbookId, pluginId, max.m + 1, user.id, now());
+    audit(user, "playbook_item_added", "playbook", playbookId, pb?.name ?? "", { plugin: pluginName });
+  } else {
+    db.prepare(`DELETE FROM playbook_items WHERE playbook_id = ? AND plugin_id = ?`).run(playbookId, pluginId);
+    audit(user, "playbook_item_removed", "playbook", playbookId, pb?.name ?? "", { plugin: pluginName });
+  }
+  db.prepare(`UPDATE playbooks SET updated_at = ? WHERE id = ?`).run(now(), playbookId);
+  revalidatePath(`/playbooks`);
+  return { ok: true };
+}
+
+export async function createPlaybookFromTrayAction(name: string, pluginIds: number[]): Promise<{ slug?: string; error?: string }> {
+  const user = await requireUser();
+  const cleanName = name.trim();
+  if (cleanName.length < 3) return { error: "Name needs 3+ characters." };
+  const ids = [...new Set(pluginIds.filter((n) => Number.isInteger(n) && n > 0))];
+  if (!ids.length) return { error: "Tray is empty." };
+  const db = getDb();
+  const valid = db
+    .prepare(`SELECT id FROM plugins WHERE status = 'approved' AND id IN (${ids.map(() => "?").join(",")})`)
+    .all(...ids) as unknown as { id: number }[];
+  if (!valid.length) return { error: "No valid catalog items selected." };
+  const slug = uniquePlaybookSlug(cleanName);
+  const res = db
+    .prepare(`INSERT INTO playbooks (slug, name, description, author_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`)
+    .run(slug, cleanName, `Saved from the install tray — ${valid.length} item(s).`, user.id, now(), now());
+  const pbId = Number(res.lastInsertRowid);
+  const insItem = db.prepare(
+    `INSERT OR IGNORE INTO playbook_items (playbook_id, plugin_id, position, added_by, created_at) VALUES (?, ?, ?, ?, ?)`
+  );
+  valid.forEach((p, i) => insItem.run(pbId, p.id, i, user.id, now()));
+  audit(user, "playbook_created", "playbook", pbId, cleanName, { items: valid.length, source: "tray" });
+  return { slug };
 }

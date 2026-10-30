@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
-import { allTags, listPlugins, listTeams } from "@/lib/queries";
+import { allTags, listPlaybooks, listPlugins, listTeams } from "@/lib/queries";
 import { PluginCard } from "@/components/plugin-card";
 import { SearchFilters } from "@/components/search-filters";
 import { PackageSearch } from "lucide-react";
@@ -22,6 +22,7 @@ export default async function Home({
   const total = listPlugins({ status: "approved" }).length;
   const tags = allTags();
   const teams = listTeams().map((t) => ({ id: t.id, name: t.name }));
+  const playbookCount = listPlaybooks().length;
 
   return (
     <div className="space-y-8">
@@ -35,6 +36,7 @@ export default async function Home({
           <span><strong className="text-white">{total}</strong> catalog items</span>
           <span><strong className="text-white">{teams.length}</strong> teams</span>
           <span><strong className="text-white">{tags.length}</strong> tags</span>
+          <a href="/playbooks" className="underline-offset-2 hover:underline"><strong className="text-white">{playbookCount}</strong> playbooks</a>
         </div>
       </section>
 

@@ -30,6 +30,11 @@ export function describeAudit(action: string): string {
     plugin_updated: "updated plugin details",
     team_created: "created a team",
     admin_toggled: "changed admin status",
+    playbook_created: "created a playbook",
+    playbook_updated: "updated a playbook",
+    playbook_deleted: "deleted a playbook",
+    playbook_item_added: "added a plugin to a playbook",
+    playbook_item_removed: "removed a plugin from a playbook",
     user_registered: "registered an account",
   };
   return map[action] ?? action.replaceAll("_", " ");

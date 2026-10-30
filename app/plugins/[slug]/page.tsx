@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Download, GitBranch, History, ShieldAlert, Upload, Users } from "lucide-react";
+import { Download, GitBranch, History, ListChecks, ShieldAlert, Upload, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getPluginAudit,
   getPluginBySlug,
   getPluginVersions,
   latestSubmissionForPlugin,
+  myPlaybooks,
   myTeams,
   pendingSubmissionsForPlugin,
+  playbooksContainingPlugin,
 } from "@/lib/queries";
 import { RiskBadge, StatusBadge, TypeBadge, TypeIcon, VersionChip } from "@/components/badges";
 import { CopyButton, ShareButton } from "@/components/copy-button";
@@ -16,6 +18,8 @@ import { Tabs } from "@/components/tabs";
 import { Markdown } from "@/components/markdown";
 import { FaqAccordion } from "@/components/faq-accordion";
 import { TeamUsageToggle } from "@/components/team-usage-toggle";
+import { AddToPlaybook } from "@/components/add-to-playbook";
+import { AddToTrayButton } from "@/components/tray";
 import { describeAudit } from "@/lib/audit";
 import { fmtDate, fmtDateTime, PERMISSIONS } from "@/lib/utils";
 
@@ -40,6 +44,10 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
   const pendingSubs = pendingSubmissionsForPlugin(p.id);
   const userTeams = user ? myTeams(user.id) : [];
   const usageTeams = userTeams.map((t) => ({ ...t, used: p.teams.some((x) => x.id === t.id) }));
+  const containing = playbooksContainingPlugin(p.id);
+  const myBooks = user
+    ? myPlaybooks(user.id).map((b) => ({ ...b, contains: containing.some((c) => c.id === b.id) }))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -92,6 +100,10 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <AddToTrayButton
+              item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }}
+              className="!px-3 !py-2 !text-sm"
+            />
             <ShareButton />
             <a
               href={`/api/plugins/${p.id}/download`}
@@ -277,6 +289,22 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
               <p className="mb-3 text-xs text-slate-500">No teams have marked this yet.</p>
             )}
             {user && <TeamUsageToggle pluginId={p.id} pluginName={p.name} teams={usageTeams} />}
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+              <ListChecks className="h-4 w-4 text-slate-400" /> Playbooks
+            </h3>
+            {containing.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {containing.map((b) => (
+                  <Link key={b.id} href={`/playbooks/${b.slug}`} className="rounded-full bg-fuchsia-50 px-2.5 py-1 text-xs font-medium text-fuchsia-700 hover:bg-fuchsia-100">
+                    {b.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {user && <AddToPlaybook pluginId={p.id} pluginName={p.name} playbooks={myBooks} />}
           </div>
 
           {(isAuthor || isAdmin) && latestSub && (

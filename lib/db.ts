@@ -1,9 +1,9 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
-import { seedIfEmpty } from "./seed";
+import { seedIfEmpty, seedPlaybooksIfEmpty } from "./seed";
 import path from "node:path";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = process.env.MARKETPLACE_DATA_DIR ? path.resolve(process.env.MARKETPLACE_DATA_DIR) : path.join(process.cwd(), "data");
 export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 
 const SCHEMA = `
@@ -93,6 +93,23 @@ CREATE TABLE IF NOT EXISTS team_usage (
   created_at TEXT NOT NULL,
   PRIMARY KEY (team_id, plugin_id)
 );
+CREATE TABLE IF NOT EXISTS playbooks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  author_id INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS playbook_items (
+  playbook_id INTEGER NOT NULL REFERENCES playbooks(id) ON DELETE CASCADE,
+  plugin_id INTEGER NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL DEFAULT 0,
+  added_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (playbook_id, plugin_id)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   actor_id INTEGER REFERENCES users(id),
@@ -124,12 +141,14 @@ export function getDb(): DatabaseSync {
     const rawPrepare = db.prepare.bind(db);
     db.prepare = ((sql: string) => {
       const stmt = rawPrepare(sql);
-      const all = stmt.all.bind(stmt);
-      const get = stmt.get.bind(stmt);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (stmt as any).all = (...a: unknown[]) => all(...a).map((r) => ({ ...r }));
+      const all = stmt.all.bind(stmt) as (...a: any[]) => Record<string, unknown>[];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (stmt as any).get = (...a: unknown[]) => {
+      const get = stmt.get.bind(stmt) as (...a: any[]) => Record<string, unknown> | undefined;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (stmt as any).all = (...a: any[]) => all(...a).map((r) => ({ ...r }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (stmt as any).get = (...a: any[]) => {
         const r = get(...a);
         return r === undefined ? undefined : { ...r };
       };
@@ -138,6 +157,7 @@ export function getDb(): DatabaseSync {
 
     globalForDb.__agenthubDb = db;
     seedIfEmpty(db, UPLOAD_DIR);
+    seedPlaybooksIfEmpty(db);
   }
   return globalForDb.__agenthubDb;
 }
