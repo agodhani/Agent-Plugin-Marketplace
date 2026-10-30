@@ -25,6 +25,7 @@ import { ReviewForm } from "@/components/review-form";
 import { Star } from "lucide-react";
 import { AddToPlaybook } from "@/components/add-to-playbook";
 import { AddToTrayButton } from "@/components/tray";
+import { FavButton } from "@/components/favorites";
 import { describeAudit } from "@/lib/audit";
 import { fmtDate, fmtDateTime, PERMISSIONS } from "@/lib/utils";
 
@@ -111,6 +112,7 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
               item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }}
               className="!px-3 !py-2 !text-sm"
             />
+            <FavButton id={p.id} name={p.name} withLabel />
             <ShareButton />
             <a
               href={`/api/plugins/${p.id}/download`}

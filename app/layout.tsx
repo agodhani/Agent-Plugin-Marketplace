@@ -3,6 +3,7 @@ import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { InstallTray, TrayProvider } from "@/components/tray";
 import { CompareBar, CompareProvider } from "@/components/compare";
+import { FavoritesProvider } from "@/components/favorites";
 import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -17,10 +18,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         <TrayProvider>
         <CompareProvider>
+        <FavoritesProvider>
           <Navbar />
           <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
           <InstallTray isLoggedIn={!!user} />
           <CompareBar />
+        </FavoritesProvider>
         </CompareProvider>
         </TrayProvider>
         <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400">

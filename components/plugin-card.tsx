@@ -3,6 +3,7 @@ import { Download, Users } from "lucide-react";
 import { RiskBadge, TypeBadge, TypeIcon, VersionChip } from "./badges";
 import { AddToTrayButton } from "./tray";
 import { CompareButton } from "./compare";
+import { FavButton } from "./favorites";
 import { StarRow } from "./stars";
 import { fmtDate } from "@/lib/utils";
 import type { PluginListItem } from "@/lib/queries";
@@ -35,6 +36,7 @@ export function PluginCard({ p }: { p: PluginListItem }) {
         </div>
         <span className="flex shrink-0 items-center gap-1.5">
           <RiskBadge level={p.risk_level} />
+          <FavButton id={p.id} name={p.name} />
           <CompareButton item={{ id: p.id, slug: p.slug, name: p.name }} />
           <AddToTrayButton item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }} />
         </span>
