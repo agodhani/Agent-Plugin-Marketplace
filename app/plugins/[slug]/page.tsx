@@ -289,7 +289,7 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <h3 className="mb-3 text-sm font-semibold text-slate-900">Details</h3>
             <dl className="space-y-2 text-sm">
-              <div className="flex justify-between"><dt className="text-slate-500">Author</dt><dd className="font-medium text-slate-800">{p.author_name}</dd></div>
+              <div className="flex justify-between"><dt className="text-slate-500">Author</dt><dd><Link href={`/publishers/${p.author_id}`} className="font-medium text-indigo-600 hover:underline">{p.author_name}</Link></dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Downloads</dt><dd className="font-medium text-slate-800">{p.downloads}</dd></div>
               <div className="flex items-center justify-between"><dt className="text-slate-500">Rating</dt><dd><StarRow avg={p.rating_avg} count={p.rating_count} /></dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Published</dt><dd className="font-medium text-slate-800">{fmtDate(p.created_at)}</dd></div>
