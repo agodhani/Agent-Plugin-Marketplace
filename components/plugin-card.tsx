@@ -22,32 +22,38 @@ const TYPE_ICON_BG: Record<string, string> = {
   documentation: "bg-amber-100 text-amber-600",
 };
 
-export function PluginCard({ p }: { p: PluginListItem }) {
+const TYPE_SHADOW: Record<string, string> = {
+  skill: "hover:shadow-violet-200/70",
+  mcp: "hover:shadow-sky-200/70",
+  plugin: "hover:shadow-emerald-200/70",
+  documentation: "hover:shadow-amber-200/70",
+};
+
+export function PluginCard({ p, i = 0 }: { p: PluginListItem; i?: number }) {
   return (
     <Link
       href={`/plugins/${p.slug}`}
-      style={{ ["--accent" as string]: ACCENTS[p.type] }}
-      className="card-accent group flex flex-col rounded-xl border border-slate-200 bg-white p-4 pt-5 transition hover:border-indigo-200 hover:shadow-md"
+      style={{ ["--accent" as string]: ACCENTS[p.type], ["--i" as string]: i }}
+      title={`${p.name} · updated ${fmtDate(p.updated_at)}`}
+      className={`card-accent spotlight enter group relative flex flex-col rounded-2xl bg-white p-4 pt-5 ring-1 ring-slate-200 transition duration-200 hover:-translate-y-1 hover:shadow-xl ${TYPE_SHADOW[p.type] ?? "hover:shadow-slate-200/70"}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${TYPE_ICON_BG[p.type] ?? "bg-slate-100 text-slate-500"}`}>
-            <TypeIcon type={p.type} className="h-4.5 w-4.5" />
-          </span>
-          <div>
-            <div className="font-semibold text-slate-900 group-hover:text-indigo-700">{p.name}</div>
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <VersionChip version={p.current_version} />
-              <TypeBadge type={p.type} />
-            </div>
+      <span className="card-actions flex items-center justify-end gap-1.5">
+        <FavButton id={p.id} name={p.name} />
+        <CompareButton item={{ id: p.id, slug: p.slug, name: p.name }} />
+        <AddToTrayButton item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }} />
+      </span>
+      <div className="flex items-start gap-3">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition duration-200 group-hover:scale-110 ${TYPE_ICON_BG[p.type] ?? "bg-slate-100 text-slate-500"}`}>
+          <TypeIcon type={p.type} className="h-4.5 w-4.5" />
+        </span>
+        <div className="min-w-0">
+          <div className="line-clamp-2 leading-snug font-semibold text-slate-900 group-hover:text-indigo-700">{p.name}</div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <VersionChip version={p.current_version} />
+            <TypeBadge type={p.type} />
+            <RiskBadge level={p.risk_level} />
           </div>
         </div>
-        <span className="flex shrink-0 items-center gap-1.5">
-          <RiskBadge level={p.risk_level} />
-          <FavButton id={p.id} name={p.name} />
-          <CompareButton item={{ id: p.id, slug: p.slug, name: p.name }} />
-          <AddToTrayButton item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }} />
-        </span>
       </div>
       <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-relaxed text-slate-600">{p.summary}</p>
       {p.tags.length > 0 && (
@@ -60,10 +66,10 @@ export function PluginCard({ p }: { p: PluginListItem }) {
           {p.tags.length > 4 && <span className="text-[11px] text-slate-400">+{p.tags.length - 4}</span>}
         </div>
       )}
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
+      <div className="mt-4 flex items-center whitespace-nowrap border-t border-slate-100 pt-3 text-xs text-slate-500">
         <span className="flex items-center gap-3">
           <StarRow avg={p.rating_avg} count={p.rating_count} />
-          <span className="inline-flex items-center gap-1" title="Downloads">
+          <span className="inline-flex items-center gap-1" title="Installs">
             <Download className="h-3.5 w-3.5" /> {p.downloads}
           </span>
           {p.teams.length > 0 && (
@@ -72,7 +78,6 @@ export function PluginCard({ p }: { p: PluginListItem }) {
             </span>
           )}
         </span>
-        <span>updated {fmtDate(p.updated_at)}</span>
       </div>
     </Link>
   );

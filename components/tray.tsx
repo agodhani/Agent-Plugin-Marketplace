@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Package, Plus, Save, Terminal, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 import { CopyButton } from "./copy-button";
 import { createPlaybookFromTrayAction } from "@/lib/actions";
 
@@ -72,10 +73,13 @@ export function AddToTrayButton({ item, className = "" }: { item: TrayItem; clas
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (inTray) remove(item.id);
-        else {
+        if (inTray) {
+          remove(item.id);
+        } else {
           add(item);
-          setOpen(true);
+          toast.success(`Added ${item.name} to install tray`, {
+            action: { label: "Open tray", onClick: () => setOpen(true) },
+          });
         }
       }}
       className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium transition ${
@@ -90,7 +94,7 @@ export function AddToTrayButton({ item, className = "" }: { item: TrayItem; clas
   );
 }
 
-type Target = "amp" | "claude" | "cursor" | "download";
+export type Target = "amp" | "claude" | "cursor" | "download";
 
 const TARGETS: { id: Target; label: string }[] = [
   { id: "amp", label: "AgentHub CLI" },
@@ -99,7 +103,7 @@ const TARGETS: { id: Target; label: string }[] = [
   { id: "download", label: "Raw zips" },
 ];
 
-function buildInstall(target: Target, items: TrayItem[], origin: string): string {
+export function buildInstall(target: Target, items: TrayItem[], origin: string): string {
   if (target === "amp") {
     return `amp install ${items.map((i) => i.slug).join(" ")}`;
   }
@@ -143,11 +147,12 @@ export function InstallTray({ isLoggedIn }: { isLoggedIn: boolean }) {
 
   return (
     <>
-      {/* floating pill */}
+      {/* floating pill — key remount replays the bump animation on every add */}
       {!open && items.length > 0 && (
         <button
+          key={items.length}
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 transition hover:bg-indigo-700"
+          className="bump fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 transition hover:bg-indigo-700"
         >
           <Package className="h-4 w-4" />
           Install tray
@@ -241,6 +246,7 @@ export function InstallTray({ isLoggedIn }: { isLoggedIn: boolean }) {
                             if (res.slug) {
                               clear();
                               setOpen(false);
+                              toast.success("Playbook saved");
                               router.push(`/playbooks/${res.slug}`);
                             } else {
                               setPbMsg(res.error ?? "Failed to save playbook.");

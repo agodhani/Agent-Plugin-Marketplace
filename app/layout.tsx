@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "sonner";
 import { Navbar } from "@/components/navbar";
 import { InstallTray, TrayProvider } from "@/components/tray";
 import { CompareBar, CompareProvider } from "@/components/compare";
 import { FavoritesProvider } from "@/components/favorites";
+import { CommandPaletteProvider } from "@/components/command-palette";
+import { PointerSpotlight } from "@/components/pointer-spotlight";
+import { Footer } from "@/components/footer";
 import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -19,16 +23,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <TrayProvider>
         <CompareProvider>
         <FavoritesProvider>
+        <CommandPaletteProvider isAdmin={!!user?.is_admin}>
+          <PointerSpotlight />
           <Navbar />
           <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
           <InstallTray isLoggedIn={!!user} />
           <CompareBar />
+          <Footer isAdmin={!!user?.is_admin} />
+        </CommandPaletteProvider>
         </FavoritesProvider>
         </CompareProvider>
         </TrayProvider>
-        <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400">
-          AgentHub · internal marketplace · submissions are security-scanned and admin-reviewed
-        </footer>
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

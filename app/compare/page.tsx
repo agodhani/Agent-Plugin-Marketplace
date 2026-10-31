@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, ShieldAlert, Users } from "lucide-react";
@@ -23,7 +24,7 @@ export default async function ComparePage({ searchParams }: { params: Promise<ne
   if (list.length < 2) {
     return (
       <div className="mx-auto max-w-xl py-20 text-center">
-        <h1 className="text-xl font-bold text-slate-900">Compare plugins</h1>
+        <PageHeader eyebrow="Catalog" title="Compare plugins" />
         <p className="mt-2 text-sm text-slate-500">Pick 2–3 plugins with the scale button on any card, then hit Compare.</p>
         <Link href="/" className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"><ArrowLeft className="h-4 w-4" /> Browse catalog</Link>
       </div>
@@ -60,7 +61,7 @@ export default async function ComparePage({ searchParams }: { params: Promise<ne
   return (
     <div className="space-y-6">
       <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800"><ArrowLeft className="h-4 w-4" /> Back to catalog</Link>
-      <h1 className="text-2xl font-bold text-slate-900">Compare {items.length} plugins</h1>
+      <PageHeader eyebrow="Catalog" title={`Compare ${items.length} plugins`} />
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full min-w-[640px] text-left">
           <thead>

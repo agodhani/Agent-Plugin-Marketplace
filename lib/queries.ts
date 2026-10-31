@@ -301,6 +301,37 @@ export function recentAudit(limit = 200): AuditRow[] {
     .all(limit) as unknown as AuditRow[];
 }
 
+export interface ActivityItem extends AuditRow {
+  actor_id: number | null;
+  plugin_slug: string | null;
+  playbook_slug: string | null;
+  plugin_status: string | null;
+}
+
+/**
+ * Audit rows joined to their plugin / playbook slugs for the activity feed.
+ * actor_name is resolved to the user's current display name; plugin_status is
+ * the plugin's CURRENT status so the feed can filter to approved items only.
+ */
+export function recentActivity(limit = 80): ActivityItem[] {
+  return getDb()
+    .prepare(
+      `SELECT a.*,
+              COALESCE(u.name, a.actor_name) AS actor_name,
+              COALESCE(p.slug, sp.slug) AS plugin_slug,
+              pb.slug AS playbook_slug,
+              COALESCE(p.status, sp.status) AS plugin_status
+       FROM audit_log a
+       LEFT JOIN users u ON u.id = a.actor_id
+       LEFT JOIN plugins p ON a.entity_type = 'plugin' AND p.id = a.entity_id
+       LEFT JOIN submissions s ON a.entity_type = 'submission' AND s.id = a.entity_id
+       LEFT JOIN plugins sp ON sp.id = s.plugin_id
+       LEFT JOIN playbooks pb ON a.entity_type = 'playbook' AND pb.id = a.entity_id
+       ORDER BY a.created_at DESC, a.id DESC LIMIT ?`
+    )
+    .all(limit) as unknown as ActivityItem[];
+}
+
 export function adminStats() {
   const db = getDb();
   const one = (sql: string) => (db.prepare(sql).get() as { c: number }).c;

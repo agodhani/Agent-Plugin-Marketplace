@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Heart, PackageSearch } from "lucide-react";
+import { toast } from "sonner";
 import { TypeBadge } from "./badges";
 import { StarRow } from "./stars";
 
@@ -31,8 +32,13 @@ export function FavButton({ id, name, withLabel = false }: { id: number; name: s
       type="button"
       aria-label={`${active ? "Remove" : "Add"} ${name} ${active ? "from" : "to"} favorites`}
       title={active ? "Saved to favorites" : "Save to favorites"}
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(id); }}
-      className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 transition ${active ? "border-rose-300 bg-rose-50 text-rose-500" : "border-slate-200 bg-white text-slate-400 hover:border-rose-300 hover:text-rose-500"}`}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggle(id);
+        toast.success(active ? `Removed ${name} from favorites` : `Saved ${name} to favorites`);
+      }}
+      className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 transition ${active ? "border-rose-300 bg-rose-50 text-rose-500" : "border-slate-200 bg-white text-slate-600 hover:border-rose-300 hover:text-rose-500"}`}
     >
       <Heart className={`h-3.5 w-3.5 ${active ? "fill-rose-500" : ""}`} />
       {withLabel && <span className="text-sm font-medium">{active ? "Saved" : "Save"}</span>}

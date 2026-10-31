@@ -121,7 +121,7 @@ test.describe("versioning", () => {
     await page.goto(`/plugins/${BENIGN_SLUG}`);
     await expect(page.getByText("v2.0.0").first()).toBeVisible();
     // activity tab records the version
-    await page.getByRole("button", { name: /Activity/ }).click();
+    await page.getByRole("tab", { name: /Activity/ }).click();
     await expect(page.getByText(/published a version/)).toBeVisible();
   });
 

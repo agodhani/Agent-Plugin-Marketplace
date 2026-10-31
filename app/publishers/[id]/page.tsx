@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, Package, Star } from "lucide-react";
@@ -30,8 +31,11 @@ export default async function PublisherPage({ params }: { params: Promise<{ id: 
           {author.name.slice(0, 1).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">{author.name}</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Publishing since {fmtDate(author.created_at)}{author.is_admin ? " · Marketplace admin" : ""}</p>
+          <PageHeader
+            eyebrow="Publisher"
+            title={author.name}
+            subtitle={`Publishing since ${fmtDate(author.created_at)}${author.is_admin ? " · Marketplace admin" : ""}`}
+          />
         </div>
         <div className="flex gap-6 text-center">
           <div><p className="text-xl font-bold text-slate-900">{items.length}</p><p className="flex items-center gap-1 text-xs text-slate-500"><Package className="h-3 w-3" /> plugins</p></div>

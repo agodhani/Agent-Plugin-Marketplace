@@ -25,8 +25,229 @@ body {
   position: absolute;
   inset: 0 0 auto 0;
   height: 3px;
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-radius: 1rem 1rem 0 0;
   background: var(--accent, transparent);
+}
+
+/* ================= motion system ================= */
+/* entrances 500-700ms cubic-bezier(.2,.7,.2,1) · hovers ~200ms · ambient 15-30s.
+   Only transform / opacity / filter / background-position are animated. */
+
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes aurora-drift {
+  from { transform: translate3d(-6%, -4%, 0) scale(1); }
+  to { transform: translate3d(7%, 6%, 0) scale(1.15); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes spin-angle {
+  to { --angle: 360deg; }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+@keyframes bump {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@keyframes float-y {
+  from { transform: translateY(-7px); }
+  to { transform: translateY(7px); }
+}
+
+/* route-change / mount entrance, staggered via --i */
+.enter {
+  animation: fade-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* scroll-driven reveal — progressive enhancement: where animation-timeline is
+   unsupported the element simply renders normally. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+}
+
+@media print {
+  .reveal {
+    animation: none;
+  }
+}
+
+/* hero aurora blobs — slow ambient drift, alternate directions */
+.aurora { will-change: transform; }
+.aurora-a { animation: aurora-drift 18s ease-in-out infinite alternate; }
+.aurora-b { animation: aurora-drift 24s ease-in-out infinite alternate-reverse; }
+.aurora-c { animation: aurora-drift 28s ease-in-out infinite alternate; }
+
+/* activity marquee — duplicate track content, shift by -50% for a seamless loop */
+.marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
+.marquee-track { animation: marquee 30s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+/* gradient text shimmer */
+.shimmer-text {
+  background: linear-gradient(110deg, #a5b4fc 15%, #f0abfc 38%, #7dd3fc 62%, #a5b4fc 85%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 18s linear infinite;
+}
+
+/* loading skeleton shimmer */
+.skeleton {
+  background: linear-gradient(100deg, #e2e8f0 35%, #f1f5f9 50%, #e2e8f0 65%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* rotating conic-gradient border (featured card) */
+.conic-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#0f172a, #1e293b) padding-box,
+    conic-gradient(
+      from var(--angle),
+      rgb(99 102 241 / 0) 0%,
+      rgb(129 140 248 / 0.9) 12%,
+      rgb(232 121 249 / 0.9) 24%,
+      rgb(125 211 252 / 0.9) 36%,
+      rgb(99 102 241 / 0) 50%
+    ) border-box;
+  animation: spin-angle 15s linear infinite;
+}
+
+/* status dots */
+.pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+/* tray pill bump on add */
+.bump { animation: bump 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* floating decorative cards around the hero terminal */
+.float-a { animation: float-y 6s ease-in-out infinite alternate; }
+.float-b { animation: float-y 8s ease-in-out infinite alternate-reverse; }
+
+/* command palette + overlay */
+.palette-panel { animation: scale-in 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.palette-overlay { animation: fade-in 0.2s ease both; }
+
+/* cursor spotlight — --mx/--my set by components/pointer-spotlight.tsx */
+.spotlight { position: relative; }
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  background: radial-gradient(
+    var(--spotlight-radius, 320px) circle at var(--mx, 50%) var(--my, 50%),
+    var(--spotlight-color, rgb(99 102 241 / 0.08)),
+    transparent 70%
+  );
+}
+.spotlight:hover::after { opacity: 1; }
+
+/* hero grid overlay with radial mask */
+.hero-grid {
+  background-image:
+    linear-gradient(rgb(148 163 184 / 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(148 163 184 / 0.09) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 25%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 25%, transparent 75%);
+}
+
+/* hero film-grain noise (inline SVG feTurbulence) */
+.hero-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* card action cluster: floating toolbar on hover-capable devices */
+@media (hover: hover) {
+  .card-actions {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 2;
+    padding: 0.25rem;
+    border-radius: 0.625rem;
+    background: rgb(255 255 255 / 0.92);
+    box-shadow: 0 4px 14px rgb(15 23 42 / 0.14);
+    border: 1px solid rgb(226 232 240 / 0.9);
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .card-accent:hover .card-actions,
+  .card-accent:focus-within .card-actions {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* diagonal shine sweep on hover (featured card) */
+.shine {
+  position: absolute;
+  inset: -40%;
+  transform: translateX(-70%) rotate(12deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.09), transparent);
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  pointer-events: none;
+}
+.group:hover .shine { transform: translateX(70%) rotate(12deg); }
+
+/* reduced motion: kill every animation on our motion classes (never a global *) */
+@media (prefers-reduced-motion: reduce) {
+  .enter, .reveal, .aurora, .marquee-track, .shimmer-text, .skeleton,
+  .conic-border, .pulse-dot, .bump, .float-a, .float-b, .palette-panel, .palette-overlay,
+  .spotlight::after, .shine, .nav-sheet, .nav-sheet-overlay {
+    animation: none !important;
+    transition: none !important;
+  }
+  .marquee {
+    overflow-x: auto;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
 }
 
 /* --- shadcn/radix keyframes --- */

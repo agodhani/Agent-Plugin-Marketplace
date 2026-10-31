@@ -23,7 +23,7 @@ test.describe("ui / styling", () => {
     expect(body.font.toLowerCase()).not.toContain("times");
 
     // a catalog card has real styling (border-radius + padding applied)
-    const card = page.locator('a[href^="/plugins/"]').first();
+    const card = page.locator('a[href^="/plugins/"].card-accent').first();
     const style = await card.evaluate((el) => {
       const s = getComputedStyle(el);
       return { radius: parseFloat(s.borderTopLeftRadius), pad: parseFloat(s.paddingTop), bg: s.backgroundColor };
@@ -31,8 +31,8 @@ test.describe("ui / styling", () => {
     expect(style.radius).toBeGreaterThan(4);
     expect(style.pad).toBeGreaterThan(0);
 
-    // hero renders its gradient
-    const hero = page.locator("h1", { hasText: "Agent Plugin Marketplace" }).locator("..");
+    // hero renders its gradient background
+    const hero = page.locator('section[aria-labelledby="hero-title"]');
     const bg = await hero.evaluate((el) => getComputedStyle(el).backgroundImage);
     expect(bg).toContain("gradient");
   });

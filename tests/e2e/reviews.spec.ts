@@ -10,13 +10,13 @@ test.describe("reviews", () => {
 
     await login(page, ALICE.email, ALICE.password);
     await page.goto("/plugins/postgres-mcp");
-    await page.getByRole("button", { name: /Reviews/ }).click();
+    await page.getByRole("tab", { name: /Reviews/ }).click();
     // alice already has a seeded review -> form prefilled with update CTA
     await expect(page.getByRole("button", { name: "Update review" })).toBeVisible();
 
     // post a fresh review on a plugin alice hasn't reviewed
     await page.goto("/plugins/onboarding-guide");
-    await page.getByRole("button", { name: /Reviews/ }).click();
+    await page.getByRole("tab", { name: /Reviews/ }).click();
     await page.getByRole("button", { name: "Rate 4 stars" }).click();
     await page.fill('textarea[placeholder*="What worked"]', "Clear and useful — E2E");
     await page.getByRole("button", { name: "Post review" }).click();

@@ -19,11 +19,13 @@ test.describe("teams", () => {
     // the team chip now appears under "Teams using this"
     await expect(page.locator("span", { hasText: teamName }).first()).toBeVisible();
 
-    // home page team filter shows the plugin
+    // home page team filter shows the plugin (shadcn Select — combobox role)
     await page.goto("/");
-    await page.locator("select").first().selectOption({ label: `Used by ${teamName}` });
-    await expect(page.getByText("Postgres Query Tool").first()).toBeVisible();
-    await expect(page.getByText("Code Review Assistant")).toHaveCount(0);
+    await page.getByRole("combobox", { name: "Filter by team usage" }).click();
+    await page.getByRole("option", { name: `Used by ${teamName}` }).click();
+    const results = page.getByTestId("catalog-results");
+    await expect(results.getByText("Postgres Query Tool").first()).toBeVisible();
+    await expect(results.getByText("Code Review Assistant")).toHaveCount(0);
   });
 
   test("join and leave a team", async ({ page }) => {

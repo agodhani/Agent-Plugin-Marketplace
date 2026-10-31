@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
@@ -12,13 +13,11 @@ export default async function TeamsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Teams</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Teams mark which plugins they rely on — it helps others discover what&apos;s battle-tested and gives admins an
-          ownership trail.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Workspace"
+        title="Teams"
+        subtitle="Teams mark which plugins they rely on — it helps others discover what's battle-tested and gives admins an ownership trail."
+      />
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {teams.map((t) => {

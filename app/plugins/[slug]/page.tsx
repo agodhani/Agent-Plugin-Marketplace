@@ -15,7 +15,8 @@ import {
   reviewsForPlugin,
 } from "@/lib/queries";
 import { RiskBadge, StatusBadge, TypeBadge, TypeIcon, VersionChip } from "@/components/badges";
-import { CopyButton, ShareButton } from "@/components/copy-button";
+import { ShareButton } from "@/components/copy-button";
+import { InstallFor } from "@/components/install-for";
 import { Tabs } from "@/components/tabs";
 import { Markdown } from "@/components/markdown";
 import { FaqAccordion } from "@/components/faq-accordion";
@@ -35,6 +36,32 @@ const TYPE_ICON_BG: Record<string, string> = {
   plugin: "bg-emerald-100 text-emerald-600",
   documentation: "bg-amber-100 text-amber-600",
 };
+
+const TYPE_BAND: Record<string, string> = {
+  skill: "from-violet-100/80 via-white to-white",
+  mcp: "from-sky-100/80 via-white to-white",
+  plugin: "from-emerald-100/80 via-white to-white",
+  documentation: "from-amber-100/80 via-white to-white",
+};
+
+const TYPE_GLOW: Record<string, string> = {
+  skill: "bg-violet-400/30",
+  mcp: "bg-sky-400/30",
+  plugin: "bg-emerald-400/30",
+  documentation: "bg-amber-400/40",
+};
+
+/**
+ * Existence check in generateMetadata too: it is awaited before the body
+ * streams, so the notFound() thrown here produces a real HTTP 404. A notFound()
+ * inside the streamed page would still render the 404 UI but with status 200.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const p = getPluginBySlug(slug);
+  if (!p) notFound();
+  return { title: `${p.name} — AgentHub` };
+}
 
 export default async function PluginPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -86,20 +113,22 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className={`relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br p-6 ${TYPE_BAND[p.type] ?? "from-slate-100 via-white to-white"}`}>
+        <div aria-hidden className={`pointer-events-none absolute -left-4 -top-6 h-36 w-36 rounded-full blur-3xl ${TYPE_GLOW[p.type] ?? "bg-slate-300/30"}`} />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <span
-              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${
+              className={`enter relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
                 TYPE_ICON_BG[p.type] ?? "bg-slate-100 text-slate-500"
               }`}
+              style={{ ["--i" as string]: 0 }}
             >
               <TypeIcon type={p.type} className="h-7 w-7" />
             </span>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">{p.name}</h1>
-              <p className="mt-1 max-w-2xl text-slate-600">{p.summary}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              <h1 className="enter text-2xl font-bold text-slate-900" style={{ ["--i" as string]: 1 }}>{p.name}</h1>
+              <p className="enter mt-1 max-w-2xl text-slate-600" style={{ ["--i" as string]: 2 }}>{p.summary}</p>
+              <div className="enter mt-3 flex flex-wrap items-center gap-2" style={{ ["--i" as string]: 3 }}>
                 <TypeBadge type={p.type} />
                 <VersionChip version={p.current_version} />
                 <RiskBadge level={p.risk_level} score={p.risk_score} />
@@ -107,7 +136,7 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="enter flex flex-wrap items-center gap-2" style={{ ["--i" as string]: 4 }}>
             <AddToTrayButton
               item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }}
               className="!px-3 !py-2 !text-sm"
@@ -132,7 +161,7 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6">
           <Tabs
             tabs={[
@@ -278,14 +307,9 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
         </div>
 
         <aside className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
             <h3 className="mb-2 text-sm font-semibold text-slate-900">Install</h3>
-            <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-lg bg-slate-900 px-3 py-2 font-mono text-xs text-slate-100">
-                {p.install_command}
-              </code>
-              <CopyButton text={p.install_command} />
-            </div>
+            <InstallFor item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }} />
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5">

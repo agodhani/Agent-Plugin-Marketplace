@@ -36,6 +36,21 @@ export function fmtDate(s?: string | null): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+export function timeAgo(s?: string | null): string {
+  if (!s) return "";
+  const diff = Date.now() - new Date(s).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.floor(mo / 12)}y ago`;
+}
+
 export function fmtDateTime(s?: string | null): string {
   if (!s) return "—";
   const d = new Date(s);

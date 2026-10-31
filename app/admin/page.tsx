@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { ArrowRight, ClipboardList } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
@@ -24,10 +25,11 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Review console</h1>
-        <p className="mt-1 text-sm text-slate-500">Approve or reject catalog submissions. Every decision is audit-logged.</p>
-      </div>
+      <PageHeader
+        eyebrow="Governance"
+        title="Review console"
+        subtitle="Approve or reject catalog submissions. Every decision is audit-logged."
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {cards.map((c) => (

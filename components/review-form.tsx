@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Star } from "lucide-react";
+import { toast } from "sonner";
 import { upsertReviewAction } from "@/lib/actions";
 
 export function ReviewForm({ pluginId, initial }: { pluginId: number; initial?: { rating: number; body: string } }) {
@@ -20,6 +21,8 @@ export function ReviewForm({ pluginId, initial }: { pluginId: number; initial?: 
         start(async () => {
           const res = await upsertReviewAction(pluginId, rating, body);
           setMsg(res.error ?? "Review saved.");
+          if (res.error) toast.error(res.error);
+          else toast.success("Review saved");
         });
       }}
     >

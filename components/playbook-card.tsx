@@ -8,7 +8,8 @@ export function PlaybookCard({ pb }: { pb: PlaybookListItem }) {
   return (
     <Link
       href={`/playbooks/${pb.slug}`}
-      className="group flex flex-col rounded-xl border border-slate-200 bg-white p-4 transition hover:border-indigo-200 hover:shadow-md"
+      style={{ ["--accent" as string]: "linear-gradient(90deg,#c026d3,#f0abfc)" }}
+      className="card-accent spotlight group relative flex flex-col rounded-2xl bg-white p-4 pt-5 ring-1 ring-slate-200 transition duration-200 hover:-translate-y-1 hover:border-fuchsia-200 hover:shadow-xl hover:shadow-fuchsia-200/60"
     >
       <div className="flex items-start gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fuchsia-100 text-fuchsia-600">

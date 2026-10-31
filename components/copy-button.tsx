@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, Link2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function CopyButton({ text, label = "Copy", className = "" }: { text: string; label?: string; className?: string }) {
   const [copied, setCopied] = useState(false);
@@ -19,6 +20,7 @@ export function CopyButton({ text, label = "Copy", className = "" }: { text: str
           document.execCommand("copy");
           ta.remove();
         }
+        toast.success("Copied to clipboard");
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
@@ -37,6 +39,7 @@ export function ShareButton() {
       type="button"
       onClick={async () => {
         await navigator.clipboard.writeText(window.location.href).catch(() => {});
+        toast.success("Copied to clipboard");
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}

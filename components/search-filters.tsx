@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
+import { Select } from "./ui/select";
 
 const TYPES = [
   { id: "all", label: "All types" },
@@ -72,27 +73,27 @@ export function SearchFilters({
           />
         </div>
         <div className="flex gap-2">
-          <select
-            value={team}
-            onChange={(e) => push({ team: e.target.value })}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm"
-          >
-            <option value="">Any team usage</option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                Used by {t.name}
-              </option>
-            ))}
-          </select>
-          <select
+          <Select
+            value={team || "any"}
+            onValueChange={(v) => push({ team: v === "any" ? "" : v })}
+            ariaLabel="Filter by team usage"
+            className="min-w-0 flex-1 sm:flex-none sm:min-w-44"
+            options={[
+              { value: "any", label: "Any team usage" },
+              ...teams.map((t) => ({ value: String(t.id), label: `Used by ${t.name}` })),
+            ]}
+          />
+          <Select
             value={sort}
-            onChange={(e) => push({ sort: e.target.value })}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm"
-          >
-            <option value="recent">Recently updated</option>
-            <option value="name">Name A–Z</option>
-            <option value="downloads">Most downloaded</option>
-          </select>
+            onValueChange={(v) => push({ sort: v })}
+            ariaLabel="Sort catalog"
+            className="min-w-0 flex-1 sm:flex-none"
+            options={[
+              { value: "recent", label: "Recently updated" },
+              { value: "name", label: "Name A–Z" },
+              { value: "downloads", label: "Most downloaded" },
+            ]}
+          />
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">

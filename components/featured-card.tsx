@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Flame } from "lucide-react";
+import { Download, Flame, Sparkles } from "lucide-react";
 import { RiskBadge, TypeBadge, TypeIcon, VersionChip } from "./badges";
 import { StarRow } from "./stars";
 import type { PluginListItem } from "@/lib/queries";
@@ -15,14 +15,16 @@ export function FeaturedCard({ p }: { p: PluginListItem }) {
   return (
     <Link
       href={`/plugins/${p.slug}`}
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white transition hover:shadow-xl"
+      className="conic-border group relative flex flex-col justify-between overflow-hidden rounded-2xl p-6 text-white transition duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-950/40"
     >
+      <div aria-hidden className="shine" />
       <div>
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-300">
             <Flame className="h-3.5 w-3.5" /> Staff pick
+            <Sparkles className="pulse-dot h-3 w-3 text-amber-200" />
           </span>
-          <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${TYPE_ICON_BG[p.type] ?? "bg-slate-700 text-slate-300"}`}>
+          <span className={`flex h-11 w-11 items-center justify-center rounded-xl transition duration-200 group-hover:scale-110 ${TYPE_ICON_BG[p.type] ?? "bg-slate-700 text-slate-300"}`}>
             <TypeIcon type={p.type} className="h-5 w-5" />
           </span>
         </div>

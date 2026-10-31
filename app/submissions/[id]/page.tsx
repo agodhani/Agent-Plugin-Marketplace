@@ -7,6 +7,7 @@ import { getSubmission } from "@/lib/queries";
 import { RiskBadge, StatusBadge, TypeBadge } from "@/components/badges";
 import { ScanReport } from "@/components/scan-report";
 import { ReviewPanel } from "@/components/review-panel";
+import { PipelineStepper } from "@/components/pipeline-stepper";
 import { computeRisk, type SecurityFinding } from "@/lib/scan";
 import { fmtDateTime, PERMISSIONS } from "@/lib/utils";
 
@@ -42,6 +43,8 @@ export default async function SubmissionPage({ params }: { params: Promise<{ id:
       <Link href={user?.is_admin ? "/admin" : "/profile"} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
+
+      <PipelineStepper status={sub.status as "pending" | "approved" | "rejected"} />
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
