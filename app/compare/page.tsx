@@ -36,8 +36,9 @@ export default async function ComparePage({ searchParams }: { params: Promise<ne
     `SELECT p.*, COALESCE(u.name,'unknown') AS author_name,
             COALESCE((SELECT AVG(rating) FROM reviews r WHERE r.plugin_id=p.id),0) AS rating_avg,
             (SELECT COUNT(*) FROM reviews r WHERE r.plugin_id=p.id) AS rating_count
-     FROM plugins p LEFT JOIN users u ON u.id=p.author_id WHERE p.id IN (${ph})`
+     FROM plugins p LEFT JOIN users u ON u.id=p.author_id WHERE p.status = 'approved' AND p.id IN (${ph})`
   ).all(...list) as unknown as Row[];
+  if (rows.length < 2) notFound();
   for (const r of rows) {
     r.tags = (db.prepare(`SELECT tag FROM plugin_tags WHERE plugin_id=?`).all(r.id) as { tag: string }[]).map((t) => t.tag);
     r.teams = (db.prepare(`SELECT t.name FROM team_usage tu JOIN teams t ON t.id=tu.team_id WHERE tu.plugin_id=?`).all(r.id) as { name: string }[]).map((t) => t.name);

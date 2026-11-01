@@ -4,7 +4,19 @@ import { useState, useTransition } from "react";
 import { reviewAction } from "@/lib/actions";
 import { CheckCircle2, XCircle } from "lucide-react";
 
-export function ReviewPanel({ submissionId }: { submissionId: number }) {
+export function ReviewPanel({ submissionId, isOwnSubmission = false }: { submissionId: number; isOwnSubmission?: boolean }) {
+  if (isOwnSubmission) {
+    return (
+      <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-5">
+        <h3 className="mb-3 font-semibold text-slate-900">Review decision</h3>
+        <p className="text-sm text-slate-600">You can't review your own submission — another admin must approve or reject it.</p>
+      </div>
+    );
+  }
+  return <ReviewPanelInner submissionId={submissionId} />;
+}
+
+function ReviewPanelInner({ submissionId }: { submissionId: number }) {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();

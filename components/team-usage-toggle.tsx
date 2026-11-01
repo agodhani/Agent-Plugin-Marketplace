@@ -6,11 +6,9 @@ import { setTeamUsageAction } from "@/lib/actions";
 
 export function TeamUsageToggle({
   pluginId,
-  pluginName,
   teams,
 }: {
   pluginId: number;
-  pluginName: string;
   teams: { id: number; name: string; used: boolean }[];
 }) {
   const [pending, start] = useTransition();
@@ -23,7 +21,7 @@ export function TeamUsageToggle({
         <button
           key={t.id}
           disabled={pending}
-          onClick={() => start(async () => { await setTeamUsageAction(pluginId, t.id, !t.used, pluginName); })}
+          onClick={() => start(async () => { await setTeamUsageAction(pluginId, t.id, !t.used); })}
           className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition disabled:opacity-50 ${
             t.used
               ? "border-green-300 bg-green-50 text-green-800"

@@ -6,11 +6,9 @@ import { togglePlaybookItemAction } from "@/lib/actions";
 
 export function AddToPlaybook({
   pluginId,
-  pluginName,
   playbooks,
 }: {
   pluginId: number;
-  pluginName: string;
   playbooks: { id: number; name: string; contains: boolean }[];
 }) {
   const [pending, start] = useTransition();
@@ -23,7 +21,7 @@ export function AddToPlaybook({
         <button
           key={pb.id}
           disabled={pending}
-          onClick={() => start(async () => { await togglePlaybookItemAction(pb.id, pluginId, !pb.contains, pluginName); })}
+          onClick={() => start(async () => { await togglePlaybookItemAction(pb.id, pluginId, !pb.contains); })}
           className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition disabled:opacity-50 ${
             pb.contains
               ? "border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800"

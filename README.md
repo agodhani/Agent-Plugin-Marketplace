@@ -54,3 +54,22 @@ The seed includes 8 approved catalog items and 1 pending high-risk submission so
 3. **Security scan**: regex-based static analysis for dangerous exec, network egress, hardcoded secrets, sensitive paths, destructive fs ops, env access, obfuscation.
 4. **Risk score**: `Σ(permission weights) + Σ(finding severities)` → low / medium / high badge.
 5. **Admin review**: `/admin` queue → inspect report → approve (publishes) or reject (with notes). All of it lands in the audit log.
+
+## Environment flags
+
+- `ALLOW_ADMIN_TOGGLE=1` — re-enable the profile admin switch in production (always on in dev).
+- `SEED_DEMO_DATA=1` — seed demo data on an empty DB in production (always seeded in dev).
+- `MARKETPLACE_DATA_DIR` — data directory (default `./data`), holds `marketplace.db` and `uploads/`.
+
+## Admin access
+
+```bash
+npm run promote-admin -- alice@acme.dev
+```
+
+Grants `is_admin` and writes an `admin_granted` audit row. In production the profile toggle is disabled — use this script.
+
+## Upload & scan limits
+
+Defined once in `lib/scan.ts` (`LIMITS`): uploads ≤ 50 MB (route also checks `Content-Length` before reading the body), ≤ 500 files per archive, ≤ 50 MB uncompressed total, 5 s security-scan budget (exceeding it records a `scan-incomplete` finding). Binary executables and nested archives are flagged high risk; other binaries are reported once. Login rate limiting: 5 failures per email or 100 per IP in a 15-minute window.
+In production, deploy behind a reverse proxy that appends `X-Forwarded-For` (the limiter reads the last entry).

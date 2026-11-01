@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getDb } from "./db";
 
 export interface PluginListItem {
@@ -152,7 +153,7 @@ export function listPlugins(opts: {
   return attachTagsAndTeams(rows);
 }
 
-export function getPluginBySlug(slug: string): PluginDetail | null {
+export const getPluginBySlug = cache(function getPluginBySlug(slug: string): PluginDetail | null {
   const row = getDb()
     .prepare(`SELECT ${LIST_COLS}, p.about, p.readme, p.faq, p.permissions, p.install_command, p.author_id, p.created_at
        FROM plugins p LEFT JOIN users u ON u.id = p.author_id WHERE p.slug = ?`)
@@ -176,7 +177,7 @@ export function getPluginBySlug(slug: string): PluginDetail | null {
     permissions = JSON.parse(row.permissions);
   } catch { /* ignore */ }
   return { ...withMeta, about: row.about, readme: row.readme, faq, permissions, install_command: row.install_command, author_id: row.author_id, created_at: row.created_at };
-}
+});
 
 export function getPluginVersions(pluginId: number): VersionRow[] {
   return getDb()
@@ -256,7 +257,7 @@ export function myTeams(userId: number): { id: number; name: string }[] {
 
 export function teamPlugins(teamId: number): PluginListItem[] {
   const rows = getDb()
-    .prepare(`${LIST_SELECT} WHERE p.id IN (SELECT plugin_id FROM team_usage WHERE team_id = ?) ORDER BY p.name`)
+    .prepare(`${LIST_SELECT} WHERE p.status = 'approved' AND p.id IN (SELECT plugin_id FROM team_usage WHERE team_id = ?) ORDER BY p.name`)
     .all(teamId) as unknown as Omit<PluginListItem, "tags" | "teams">[];
   return attachTagsAndTeams(rows);
 }
@@ -375,9 +376,9 @@ export function listPlaybooks(opts?: { q?: string }): PlaybookListItem[] {
     .prepare(
       `SELECT pb.id, pb.slug, pb.name, pb.description, pb.author_id, pb.created_at, pb.updated_at,
               COALESCE(u.name, 'unknown') AS author_name,
-              (SELECT COUNT(*) FROM playbook_items pi WHERE pi.playbook_id = pb.id) AS item_count,
+              (SELECT COUNT(*) FROM playbook_items pi JOIN plugins p ON p.id = pi.plugin_id AND p.status = 'approved' WHERE pi.playbook_id = pb.id) AS item_count,
               COALESCE((SELECT GROUP_CONCAT(DISTINCT p.type) FROM playbook_items pi
-                        JOIN plugins p ON p.id = pi.plugin_id WHERE pi.playbook_id = pb.id), '') AS types
+                        JOIN plugins p ON p.id = pi.plugin_id AND p.status = 'approved' WHERE pi.playbook_id = pb.id), '') AS types
        FROM playbooks pb LEFT JOIN users u ON u.id = pb.author_id
        WHERE ${where.join(" AND ")} ORDER BY pb.updated_at DESC`
     )
@@ -390,9 +391,9 @@ export function getPlaybookBySlug(slug: string): PlaybookDetail | null {
     .prepare(
       `SELECT pb.id, pb.slug, pb.name, pb.description, pb.author_id, pb.created_at, pb.updated_at,
               COALESCE(u.name, 'unknown') AS author_name,
-              (SELECT COUNT(*) FROM playbook_items pi WHERE pi.playbook_id = pb.id) AS item_count,
+              (SELECT COUNT(*) FROM playbook_items pi JOIN plugins p ON p.id = pi.plugin_id AND p.status = 'approved' WHERE pi.playbook_id = pb.id) AS item_count,
               COALESCE((SELECT GROUP_CONCAT(DISTINCT p.type) FROM playbook_items pi
-                        JOIN plugins p ON p.id = pi.plugin_id WHERE pi.playbook_id = pb.id), '') AS types
+                        JOIN plugins p ON p.id = pi.plugin_id AND p.status = 'approved' WHERE pi.playbook_id = pb.id), '') AS types
        FROM playbooks pb LEFT JOIN users u ON u.id = pb.author_id WHERE pb.slug = ?`
     )
     .get(slug) as unknown as (Omit<PlaybookListItem, "types"> & { types: string }) | undefined;

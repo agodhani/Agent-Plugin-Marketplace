@@ -21,6 +21,8 @@ export default defineConfig({
     env: {
       MARKETPLACE_DATA_DIR: ".test-data",
       NEXT_DIST_DIR: ".next-test",
+      ALLOW_ADMIN_TOGGLE: "1",
+      SEED_DEMO_DATA: "1",
     },
   },
 });

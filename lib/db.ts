@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import { seedIfEmpty, seedPlaybooksIfEmpty, seedReviewsIfEmpty } from "./seed";
+import { demoSeedEnabled } from "./flags";
 import path from "node:path";
 
 const DATA_DIR = process.env.MARKETPLACE_DATA_DIR ? path.resolve(process.env.MARKETPLACE_DATA_DIR) : path.join(process.cwd(), "data");
@@ -131,6 +132,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
   details TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS rate_limits (
+  bucket TEXT PRIMARY KEY,
+  events TEXT NOT NULL DEFAULT '[]'
+);
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_plugins_status ON plugins(status);
 CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
@@ -166,9 +171,42 @@ export function getDb(): DatabaseSync {
     }) as typeof db.prepare;
 
     globalForDb.__agenthubDb = db;
-    seedIfEmpty(db, UPLOAD_DIR);
-    seedPlaybooksIfEmpty(db);
-    seedReviewsIfEmpty(db);
+    if (demoSeedEnabled()) {
+      seedIfEmpty(db, UPLOAD_DIR);
+      seedPlaybooksIfEmpty(db);
+      seedReviewsIfEmpty(db);
+    }
   }
   return globalForDb.__agenthubDb;
+}
+
+// ---------------- transactions ----------------
+
+let txDepth = 0;
+
+/**
+ * Run fn inside a SQLite transaction (BEGIN IMMEDIATE). Nested calls join the
+ * outer transaction. If fn returns a Promise, roll back and throw — transactions
+ * must not span awaits (and redirect() must never be called inside one).
+ */
+export function tx<T>(fn: () => T, db: DatabaseSync = getDb()): T {
+  if (txDepth > 0) return fn();
+  db.exec("BEGIN IMMEDIATE");
+  txDepth++;
+  try {
+    const out = fn();
+    if (out instanceof Promise) {
+      db.exec("ROLLBACK");
+      throw new Error("tx() callbacks must be synchronous — no async work or redirect() inside a transaction.");
+    }
+    db.exec("COMMIT");
+    return out;
+  } catch (e) {
+    try {
+      db.exec("ROLLBACK");
+    } catch { /* already rolled back */ }
+    throw e;
+  } finally {
+    txDepth--;
+  }
 }

@@ -113,7 +113,7 @@ export default async function SubmissionPage({ params }: { params: Promise<{ id:
         findingScore={findingScore}
       />
 
-      {user?.is_admin === 1 && sub.status === "pending" && <ReviewPanel submissionId={sub.id} />}
+      {user?.is_admin === 1 && sub.status === "pending" && <ReviewPanel submissionId={sub.id} isOwnSubmission={sub.submitted_by === user.id} />}
     </div>
   );
 }

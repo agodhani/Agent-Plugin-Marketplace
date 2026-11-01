@@ -20,3 +20,9 @@ export function middleware(req: NextRequest) {
   }
   return NextResponse.next();
 }
+
+// Skip /api/* so Next doesn't clone (and truncate) large upload bodies; the
+// matcher only matters for dev server-action POSTs to page routes anyway.
+export const config = {
+  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico).*)"],
+};

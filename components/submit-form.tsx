@@ -1,8 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useActionState } from "react";
-import { submitPluginAction, type ActionState } from "@/lib/actions";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { PERMISSIONS, PLUGIN_TYPES, TYPE_META } from "@/lib/utils";
 import { FaqEditor } from "./faq-editor";
 
@@ -11,10 +10,32 @@ const input =
 const label = "mb-1 block text-sm font-medium text-slate-700";
 
 export function SubmitForm() {
-  const [state, action, pending] = useActionState<ActionState, FormData>(submitPluginAction, {});
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+    let res: Response;
+    try {
+      res = await fetch("/api/submissions", { method: "POST", body: new FormData(e.currentTarget) });
+    } catch {
+      setPending(false);
+      setError("Network error — please try again.");
+      return;
+    }
+    const data = (await res.json().catch(() => ({}))) as { slug?: string; error?: string };
+    if (res.ok && data.slug) {
+      router.push(`/plugins/${data.slug}`);
+      return;
+    }
+    setPending(false);
+    setError(data.error ?? "Submission failed — please try again.");
+  };
   return (
-    <form action={action} className="space-y-8">
-      {state.error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</p>}
+    <form onSubmit={onSubmit} className="space-y-8">
+      {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       <section className="rounded-xl border border-slate-200 bg-white p-6">
         <h2 className="mb-4 font-semibold text-slate-900">Basics</h2>

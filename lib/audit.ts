@@ -30,6 +30,7 @@ export function describeAudit(action: string): string {
     plugin_updated: "updated plugin details",
     team_created: "created a team",
     admin_toggled: "changed admin status",
+    admin_granted: "granted admin access",
     playbook_created: "created a playbook",
     playbook_updated: "updated a playbook",
     playbook_deleted: "deleted a playbook",

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { canViewPlugin, getCurrentUser } from "@/lib/auth";
 import { getPluginBySlug } from "@/lib/queries";
 
 /**
@@ -14,6 +15,8 @@ export default async function PluginLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  if (!getPluginBySlug(slug)) notFound();
+  const p = getPluginBySlug(slug);
+  const user = await getCurrentUser();
+  if (!p || !canViewPlugin(p, user)) notFound();
   return <>{children}</>;
 }

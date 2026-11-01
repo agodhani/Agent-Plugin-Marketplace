@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import JSZip from "jszip";
+import { createZip } from "../../lib/zipstore";
 
 export const ADMIN = { email: "admin@acme.dev", password: "admin123" };
 export const ALICE = { email: "alice@acme.dev", password: "password123" };
@@ -28,10 +28,8 @@ export async function register(page: Page, name: string, email: string, password
 }
 
 /** Build a zip archive in-memory for upload tests. */
-export async function makeZip(files: Record<string, string>): Promise<Buffer> {
-  const zip = new JSZip();
-  for (const [name, content] of Object.entries(files)) zip.file(name, content);
-  return zip.generateAsync({ type: "nodebuffer" });
+export async function makeZip(files: Record<string, string | Buffer>, opts?: { deflate?: boolean }): Promise<Buffer> {
+  return createZip(Object.entries(files).map(([name, data]) => ({ name, data })), opts);
 }
 
 /** A clean, low-risk plugin archive. */

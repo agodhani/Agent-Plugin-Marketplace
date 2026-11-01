@@ -1,4 +1,5 @@
-import { cookies } from "next/headers";
+import { cache } from "react";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { randomBytes } from "node:crypto";
 import { getDb } from "./db";
@@ -10,7 +11,7 @@ export interface SessionUser {
   is_admin: number;
 }
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<SessionUser | null> {
   const store = await cookies();
   const token = store.get("session")?.value;
   if (!token) return null;
@@ -22,6 +23,10 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     )
     .get(token, new Date().toISOString()) as unknown as SessionUser | undefined;
   return row ?? null;
+});
+
+export function canViewPlugin(p: { status: string; author_id: number | null }, user: SessionUser | null): boolean {
+  return p.status === "approved" || !!user?.is_admin || (!!user && user.id === p.author_id);
 }
 
 export async function createSession(userId: number) {
@@ -30,7 +35,8 @@ export async function createSession(userId: number) {
     .prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
     .run(token, userId, new Date(Date.now() + 30 * 86400_000).toISOString());
   const store = await cookies();
-  store.set("session", token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 30 * 86400 });
+  const proto = (await headers()).get("x-forwarded-proto")?.split(",")[0]?.trim();
+  store.set("session", token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 30 * 86400, secure: proto === "https" });
 }
 
 export async function destroySession() {

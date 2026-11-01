@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { mySubmissions, myTeams } from "@/lib/queries";
 import { RiskBadge, StatusBadge } from "@/components/badges";
 import { AdminToggle } from "@/components/admin-toggle";
+import { adminToggleEnabled } from "@/lib/flags";
 import { fmtDateTime } from "@/lib/utils";
 
 export default async function ProfilePage() {
@@ -36,7 +37,11 @@ export default async function ProfilePage() {
               <p className="text-xs text-amber-700">Testing toggle — grants the review console. In production this requires approval.</p>
             </div>
           </div>
-          <AdminToggle isAdmin={!!user.is_admin} />
+          {adminToggleEnabled() ? (
+            <AdminToggle isAdmin={!!user.is_admin} />
+          ) : (
+            <span className="text-xs text-amber-700">Grant admin with <code>npm run promote-admin -- &lt;email&gt;</code></span>
+          )}
         </div>
       </div>
 

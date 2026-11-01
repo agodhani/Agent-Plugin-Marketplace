@@ -17,6 +17,8 @@ export const PERMISSIONS = [
   { id: "execute", label: "Execute shell commands", weight: 5 },
 ] as const;
 
+export const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
 export function slugify(name: string): string {
   return name
     .toLowerCase()

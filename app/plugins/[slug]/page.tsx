@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Download, GitBranch, History, ListChecks, ShieldAlert, Upload, Users } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
+import { canViewPlugin, getCurrentUser } from "@/lib/auth";
 import {
   getPluginAudit,
   getPluginBySlug,
@@ -59,17 +59,17 @@ const TYPE_GLOW: Record<string, string> = {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const p = getPluginBySlug(slug);
-  if (!p) notFound();
+  const user = await getCurrentUser();
+  if (!p || !canViewPlugin(p, user)) notFound();
   return { title: `${p.name} — AgentHub` };
 }
 
 export default async function PluginPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [user, p] = await Promise.all([getCurrentUser(), Promise.resolve(getPluginBySlug(slug))]);
-  if (!p) notFound();
+  if (!p || !canViewPlugin(p, user)) notFound();
   const isAuthor = !!user && user.id === p.author_id;
   const isAdmin = !!user?.is_admin;
-  if (p.status !== "approved" && !isAuthor && !isAdmin) notFound();
 
   const versions = getPluginVersions(p.id);
   const activity = getPluginAudit(p.id);
@@ -359,7 +359,7 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
             ) : (
               <p className="mb-3 text-xs text-slate-500">No teams have marked this yet.</p>
             )}
-            {user && <TeamUsageToggle pluginId={p.id} pluginName={p.name} teams={usageTeams} />}
+            {user && <TeamUsageToggle pluginId={p.id} teams={usageTeams} />}
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -375,7 +375,7 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
                 ))}
               </div>
             )}
-            {user && <AddToPlaybook pluginId={p.id} pluginName={p.name} playbooks={myBooks} />}
+            {user && <AddToPlaybook pluginId={p.id} playbooks={myBooks} />}
           </div>
 
           {(isAuthor || isAdmin) && latestSub && (
