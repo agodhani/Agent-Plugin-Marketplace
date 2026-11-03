@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import Link from "next/link";
 import { Heart, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
-import { TypeBadge } from "./badges";
+import { TypeBadge, VerifiedMark } from "./badges";
 import { StarRow } from "./stars";
 
 interface FavCtx { ids: number[]; toggle: (id: number) => void; has: (id: number) => boolean }
@@ -46,7 +46,7 @@ export function FavButton({ id, name, withLabel = false }: { id: number; name: s
   );
 }
 
-export function FavoritesList({ items }: { items: { id: number; slug: string; name: string; type: string; summary: string; rating_avg: number; rating_count: number }[] }) {
+export function FavoritesList({ items }: { items: { id: number; slug: string; name: string; type: string; summary: string; rating_avg: number; rating_count: number; verified: boolean }[] }) {
   const { ids, has, toggle } = useFavorites();
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
@@ -67,7 +67,7 @@ export function FavoritesList({ items }: { items: { id: number; slug: string; na
         <div key={p.id} className="relative rounded-xl border border-slate-200 bg-white p-4 transition hover:border-rose-200 hover:shadow-md">
           <Link href={`/plugins/${p.slug}`}>
             <div className="flex items-start justify-between gap-2">
-              <div className="font-semibold text-slate-900">{p.name}</div>
+              <div className="flex items-center gap-1 font-semibold text-slate-900"><span>{p.name}</span>{p.verified && <VerifiedMark />}</div>
               <TypeBadge type={p.type} />
             </div>
             <p className="mt-2 line-clamp-2 text-sm text-slate-600">{p.summary}</p>

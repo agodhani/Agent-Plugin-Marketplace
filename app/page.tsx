@@ -52,11 +52,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const tag = pick("tag");
   const team = pick("team");
   const sort = pick("sort") || "recent";
-  const filtering = !!(q || (type && type !== "all") || tag || team);
+  const verified = pick("verified") === "1";
+  const filtering = !!(q || (type && type !== "all") || tag || team || verified);
 
   const user = await getCurrentUser();
   const all = listPlugins({ status: "approved" });
-  const plugins = filtering ? listPlugins({ q: q || undefined, type, tag: tag || undefined, teamId: team ? Number(team) : undefined, sort }) : all;
+  const plugins = filtering ? listPlugins({ q: q || undefined, type, tag: tag || undefined, teamId: team ? Number(team) : undefined, sort, verified: verified || undefined }) : all;
   const tags = allTags();
   const teams = listTeams().map((t) => ({ id: t.id, name: t.name }));
   const playbooks = listPlaybooks();

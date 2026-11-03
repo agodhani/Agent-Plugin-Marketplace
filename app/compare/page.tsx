@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, ShieldAlert, Users } from "lucide-react";
 import { getDb } from "@/lib/db";
-import { RiskBadge, StatusBadge, TypeBadge, VersionChip } from "@/components/badges";
+import { RiskBadge, StatusBadge, TypeBadge, VersionChip, VerifiedBadge } from "@/components/badges";
 import { StarRow } from "@/components/stars";
 import { PERMISSIONS } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ interface Row {
   current_version: string; risk_level: string; risk_score: number; status: string;
   downloads: number; permissions: string; install_command: string; author_name: string;
   rating_avg: number; rating_count: number; tags: string[]; teams: string[];
+  verified_at: string | null;
 }
 
 function Row_({ label, children }: { label: string; children: React.ReactNode }) {
@@ -52,6 +53,7 @@ export default async function ComparePage({ searchParams }: { params: Promise<ne
     { label: "Version", cell: (r) => <VersionChip version={r.current_version} /> },
     { label: "Rating", cell: (r) => <StarRow avg={r.rating_avg} count={r.rating_count} /> },
     { label: "Risk", cell: (r) => <RiskBadge level={r.risk_level} score={r.risk_score} /> },
+    { label: "Verified", cell: (r) => (r.verified_at ? <VerifiedBadge /> : <span className="text-slate-400">—</span>) },
     { label: "Installs", cell: (r) => <span className="inline-flex items-center gap-1 text-sm"><Download className="h-3.5 w-3.5 text-slate-400" />{r.downloads.toLocaleString()}</span> },
     { label: "Teams using", cell: (r) => r.teams.length ? <span className="inline-flex items-center gap-1 text-sm"><Users className="h-3.5 w-3.5 text-slate-400" />{r.teams.join(", ")}</span> : <span className="text-slate-400">—</span> },
     { label: "Permissions", cell: (r) => perm(r).length ? <ul className="space-y-0.5">{perm(r).map((x) => <li key={x} className="text-xs text-slate-600">{PERMISSIONS.find((y) => y.id === x)?.label ?? x}</li>)}</ul> : <span className="text-xs text-slate-400">none declared</span> },

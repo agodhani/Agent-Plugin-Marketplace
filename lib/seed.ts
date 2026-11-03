@@ -29,6 +29,7 @@ interface SeedPlugin {
   files: SeedFile[];
   versions: SeedVersion[];
   status: "approved" | "pending";
+  verified?: boolean;
   submittedBy: string; // email
   reviewNotes?: string;
   usedByTeams: string[];
@@ -88,6 +89,7 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
   const insUsage = db.prepare(
     `INSERT OR IGNORE INTO team_usage (team_id, plugin_id, marked_by, created_at) VALUES (?, ?, ?, ?)`
   );
+  const setVerified = db.prepare(`UPDATE plugins SET verified_at = ?, verified_by = ? WHERE id = ?`);
   const insAudit = db.prepare(
     `INSERT INTO audit_log (actor_id, actor_name, action, entity_type, entity_id, entity_name, details, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
@@ -96,6 +98,7 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
   const seeds: SeedPlugin[] = [
     {
       slug: "code-review-assistant",
+      verified: true,
       name: "Code Review Assistant",
       type: "skill",
       summary: "Structured code review checklist and comment drafting for pull requests.",
@@ -286,6 +289,7 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
     },
     {
       slug: "onboarding-guide",
+      verified: true,
       name: "Agent Onboarding Guide",
       type: "documentation",
       summary: "How we configure, evaluate and ship internal agents at Acme.",
@@ -316,6 +320,7 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
     },
     {
       slug: "secret-linter",
+      verified: true,
       name: "Secret Linter",
       type: "plugin",
       summary: "Pre-commit style scanning for leaked credentials in diffs.",
@@ -352,6 +357,7 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
     },
     {
       slug: "warehouse-sync",
+      verified: true,
       name: "Data Warehouse Sync",
       type: "mcp",
       summary: "MCP tools for querying the analytics warehouse and exporting results.",
@@ -440,6 +446,10 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       uid(p.submittedBy), latest.version, p.install, (dl += 37), submittedAt, daysAgo(2)
     );
     const pluginId = Number(res.lastInsertRowid);
+    if (p.verified) {
+      setVerified.run(daysAgo(7), adminId, pluginId);
+      insAudit.run(adminId, "admin", "plugin_verified", "plugin", pluginId, p.name, "{}", daysAgo(7));
+    }
 
     for (const tag of p.tags) insTag.run(pluginId, tag);
 
@@ -500,6 +510,7 @@ export function seedPlaybooksIfEmpty(db: DatabaseSync) {
   const insItem = db.prepare(
     `INSERT OR IGNORE INTO playbook_items (playbook_id, plugin_id, position, added_by, created_at) VALUES (?, ?, ?, ?, ?)`
   );
+  const setVerified = db.prepare(`UPDATE plugins SET verified_at = ?, verified_by = ? WHERE id = ?`);
   const insAudit = db.prepare(
     `INSERT INTO audit_log (actor_id, actor_name, action, entity_type, entity_id, entity_name, details, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`

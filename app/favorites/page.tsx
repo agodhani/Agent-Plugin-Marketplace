@@ -6,7 +6,7 @@ import { FavoritesList } from "@/components/favorites";
 export default async function FavoritesPage() {
   const items = listPlugins({ status: "approved" }).map((p) => ({
     id: p.id, slug: p.slug, name: p.name, type: p.type, summary: p.summary,
-    rating_avg: p.rating_avg, rating_count: p.rating_count,
+    rating_avg: p.rating_avg, rating_count: p.rating_count, verified: !!p.verified_at,
   }));
   return (
     <div className="space-y-6">

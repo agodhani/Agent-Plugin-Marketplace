@@ -31,6 +31,8 @@ export function describeAudit(action: string): string {
     team_created: "created a team",
     admin_toggled: "changed admin status",
     admin_granted: "granted admin access",
+    plugin_verified: "verified the plugin",
+    plugin_unverified: "removed the plugin's verification",
     playbook_created: "created a playbook",
     playbook_updated: "updated a playbook",
     playbook_deleted: "deleted a playbook",

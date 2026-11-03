@@ -144,13 +144,32 @@ CREATE INDEX IF NOT EXISTS idx_versions_plugin ON versions(plugin_id);
 
 const globalForDb = globalThis as unknown as { __agenthubDb?: DatabaseSync };
 
+const ADDED_COLUMNS: [table: string, column: string, ddl: string][] = [
+  ["plugins", "verified_at", "TEXT"],
+  ["plugins", "verified_by", "INTEGER REFERENCES users(id)"],
+];
+
+export function ensureSchema(db: DatabaseSync) {
+  db.exec(SCHEMA);
+  for (const [table, column, ddl] of ADDED_COLUMNS) {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!cols.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+  }
+}
+
+let schemaChecked = false;
+
 export function getDb(): DatabaseSync {
+  if (globalForDb.__agenthubDb && !schemaChecked) {
+    ensureSchema(globalForDb.__agenthubDb);
+    schemaChecked = true;
+  }
   if (!globalForDb.__agenthubDb) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
     const db = new DatabaseSync(path.join(DATA_DIR, "marketplace.db"));
     db.exec("PRAGMA journal_mode = WAL");
     db.exec("PRAGMA foreign_keys = ON");
-    db.exec(SCHEMA);
+    ensureSchema(db);
     // node:sqlite returns null-prototype rows; convert to plain objects so they
     // can cross the Server -> Client Component boundary in Next.js.
     const rawPrepare = db.prepare.bind(db);
@@ -171,6 +190,7 @@ export function getDb(): DatabaseSync {
     }) as typeof db.prepare;
 
     globalForDb.__agenthubDb = db;
+    schemaChecked = true;
     if (demoSeedEnabled()) {
       seedIfEmpty(db, UPLOAD_DIR);
       seedPlaybooksIfEmpty(db);

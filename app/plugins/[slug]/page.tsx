@@ -14,7 +14,9 @@ import {
   playbooksContainingPlugin,
   reviewsForPlugin,
 } from "@/lib/queries";
-import { RiskBadge, StatusBadge, TypeBadge, TypeIcon, VersionChip } from "@/components/badges";
+import { RiskBadge, StatusBadge, TypeBadge, TypeIcon, VersionChip, VerifiedBadge } from "@/components/badges";
+import { VerifyControl } from "@/components/verify-control";
+import { verificationBlockReason } from "@/lib/verification";
 import { ShareButton } from "@/components/copy-button";
 import { InstallFor } from "@/components/install-for";
 import { Tabs } from "@/components/tabs";
@@ -129,6 +131,7 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
               <h1 className="enter text-2xl font-bold text-slate-900" style={{ ["--i" as string]: 1 }}>{p.name}</h1>
               <p className="enter mt-1 max-w-2xl text-slate-600" style={{ ["--i" as string]: 2 }}>{p.summary}</p>
               <div className="enter mt-3 flex flex-wrap items-center gap-2" style={{ ["--i" as string]: 3 }}>
+                {p.verified_at && <VerifiedBadge />}
                 <TypeBadge type={p.type} />
                 <VersionChip version={p.current_version} />
                 <RiskBadge level={p.risk_level} score={p.risk_score} />
@@ -316,6 +319,9 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
             <h3 className="mb-3 text-sm font-semibold text-slate-900">Details</h3>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-slate-500">Author</dt><dd><Link href={`/publishers/${p.author_id}`} className="font-medium text-indigo-600 hover:underline">{p.author_name}</Link></dd></div>
+              {p.verified_at && (
+                <div className="flex justify-between"><dt className="text-slate-500">Verified</dt><dd className="font-medium text-slate-800">{p.verified_by_name ?? "Admin"} · {fmtDate(p.verified_at)}</dd></div>
+              )}
               <div className="flex justify-between"><dt className="text-slate-500">Downloads</dt><dd className="font-medium text-slate-800">{p.downloads}</dd></div>
               <div className="flex items-center justify-between"><dt className="text-slate-500">Rating</dt><dd><StarRow avg={p.rating_avg} count={p.rating_count} /></dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Published</dt><dd className="font-medium text-slate-800">{fmtDate(p.created_at)}</dd></div>
@@ -378,6 +384,14 @@ export default async function PluginPage({ params }: { params: Promise<{ slug: s
             {user && <AddToPlaybook pluginId={p.id} playbooks={myBooks} />}
           </div>
 
+          {isAdmin && (
+            <VerifyControl
+              pluginId={p.id}
+              verified={!!p.verified_at}
+              detail={p.verified_at ? `Verified by ${p.verified_by_name ?? "Admin"} on ${fmtDate(p.verified_at)}.` : null}
+              blockReason={verificationBlockReason(p, user, !p.verified_at)}
+            />
+          )}
           {(isAuthor || isAdmin) && latestSub && (
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
               <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900">

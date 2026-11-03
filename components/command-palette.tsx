@@ -16,7 +16,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { RiskBadge, TypeBadge, TypeIcon } from "./badges";
+import { RiskBadge, TypeBadge, TypeIcon, VerifiedMark } from "./badges";
 
 interface SearchPlugin {
   id: number;
@@ -27,6 +27,7 @@ interface SearchPlugin {
   tags: string[];
   risk_level: string;
   rating_avg: number;
+  verified: boolean;
 }
 interface SearchPlaybook {
   slug: string;
@@ -159,7 +160,7 @@ export function CommandPaletteProvider({ children, isAdmin }: { children: ReactN
                       <Command.Item
                         key={p.slug}
                         value={`${p.name} ${p.slug}`}
-                        keywords={[p.slug, p.type, ...p.tags]}
+                        keywords={[p.slug, p.type, ...p.tags, ...(p.verified ? ["verified"] : [])]}
                         onSelect={() => go(`/plugins/${p.slug}`)}
                         className={itemCls}
                       >
@@ -167,7 +168,7 @@ export function CommandPaletteProvider({ children, isAdmin }: { children: ReactN
                           <TypeIcon type={p.type} className="h-3.5 w-3.5" />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium">{p.name}</span>
+                          <span className="flex items-center gap-1"><span className="block truncate font-medium">{p.name}</span>{p.verified && <VerifiedMark />}</span>
                           <span className="block truncate text-xs text-slate-500">{p.summary}</span>
                         </span>
                         <TypeBadge type={p.type} />

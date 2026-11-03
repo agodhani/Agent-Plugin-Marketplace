@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Download, Flame, Sparkles } from "lucide-react";
-import { RiskBadge, TypeBadge, TypeIcon, VersionChip } from "./badges";
+import { RiskBadge, TypeBadge, TypeIcon, VersionChip, VerifiedMark } from "./badges";
 import { StarRow } from "./stars";
 import type { PluginListItem } from "@/lib/queries";
 
@@ -28,7 +28,7 @@ export function FeaturedCard({ p }: { p: PluginListItem }) {
             <TypeIcon type={p.type} className="h-5 w-5" />
           </span>
         </div>
-        <h3 className="mt-4 text-xl font-bold group-hover:text-indigo-300">{p.name}</h3>
+        <h3 className="mt-4 flex items-center gap-1 text-xl font-bold group-hover:text-indigo-300">{p.name}{p.verified_at && <VerifiedMark />}</h3>
         <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-slate-300">{p.summary}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <TypeBadge type={p.type} />

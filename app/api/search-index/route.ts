@@ -11,6 +11,7 @@ export function GET() {
     tags: p.tags,
     risk_level: p.risk_level,
     rating_avg: p.rating_avg,
+    verified: !!p.verified_at,
   }));
   const playbooks = listPlaybooks().map((pb) => ({
     slug: pb.slug,

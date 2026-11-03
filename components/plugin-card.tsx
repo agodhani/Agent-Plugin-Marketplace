@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Download, Users } from "lucide-react";
-import { RiskBadge, TypeBadge, TypeIcon, VersionChip } from "./badges";
+import { RiskBadge, TypeBadge, TypeIcon, VersionChip, VerifiedMark } from "./badges";
 import { AddToTrayButton } from "./tray";
 import { CompareButton } from "./compare";
 import { FavButton } from "./favorites";
@@ -47,7 +47,10 @@ export function PluginCard({ p, i = 0 }: { p: PluginListItem; i?: number }) {
           <TypeIcon type={p.type} className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
-          <div className="line-clamp-2 leading-snug font-semibold text-slate-900 group-hover:text-indigo-700">{p.name}</div>
+          <div className="flex items-start gap-1">
+            <span className="line-clamp-2 leading-snug font-semibold text-slate-900 group-hover:text-indigo-700">{p.name}</span>
+            {p.verified_at && <VerifiedMark className="mt-0.5" />}
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <VersionChip version={p.current_version} />
             <TypeBadge type={p.type} />

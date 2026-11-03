@@ -1,4 +1,5 @@
-import { FileText, Plug, Puzzle, Sparkles } from "lucide-react";
+import { BadgeCheck, FileText, Plug, Puzzle, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const TYPE_STYLES: Record<string, string> = {
   skill: "bg-violet-50 text-violet-700 ring-violet-600/20",
@@ -73,6 +74,27 @@ export function VersionChip({ version }: { version: string }) {
   return (
     <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700">
       v{version}
+    </span>
+  );
+}
+
+export function VerifiedMark({ className }: { className?: string }) {
+  return (
+    <span role="img" aria-label="Verified" title="Verified by AgentHub admins" className="inline-flex shrink-0">
+      <BadgeCheck aria-hidden className={cn("h-4 w-4 fill-blue-500 text-white", className)} />
+    </span>
+  );
+}
+
+export function VerifiedBadge() {
+  return (
+    <span
+      data-testid="verified-badge"
+      title="Verified by AgentHub admins"
+      className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/20"
+    >
+      <BadgeCheck aria-hidden className="h-3.5 w-3.5 fill-blue-600 text-white" />
+      Verified
     </span>
   );
 }

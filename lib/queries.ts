@@ -18,6 +18,7 @@ export interface PluginListItem {
   rating_count: number;
   tags: string[];
   teams: { id: number; name: string }[];
+  verified_at: string | null;
 }
 
 export interface PluginDetail extends PluginListItem {
@@ -28,6 +29,7 @@ export interface PluginDetail extends PluginListItem {
   install_command: string;
   author_id: number;
   created_at: string;
+  verified_by_name: string | null;
 }
 
 export interface VersionRow {
@@ -88,7 +90,7 @@ export interface TeamRow {
 }
 
 const LIST_COLS = `p.id, p.slug, p.name, p.type, p.summary, p.status, p.risk_level, p.risk_score,
-         p.current_version, p.downloads, p.updated_at,
+         p.current_version, p.downloads, p.updated_at, p.verified_at,
          COALESCE(u.name, 'unknown') AS author_name`;
 const LIST_SELECT = `SELECT ${LIST_COLS}
   FROM plugins p LEFT JOIN users u ON u.id = p.author_id`;
@@ -125,6 +127,7 @@ export function listPlugins(opts: {
   teamId?: number;
   status?: string;
   sort?: string;
+  verified?: boolean;
 }): PluginListItem[] {
   const where: string[] = ["p.status = ?"];
   const args: (string | number)[] = [opts.status ?? "approved"];
@@ -145,6 +148,7 @@ export function listPlugins(opts: {
     where.push("p.id IN (SELECT plugin_id FROM team_usage WHERE team_id = ?)");
     args.push(opts.teamId);
   }
+  if (opts.verified) where.push("p.verified_at IS NOT NULL");
   const order =
     opts.sort === "name" ? "p.name ASC" : opts.sort === "downloads" ? "p.downloads DESC" : "p.updated_at DESC";
   const rows = getDb()
@@ -155,8 +159,8 @@ export function listPlugins(opts: {
 
 export const getPluginBySlug = cache(function getPluginBySlug(slug: string): PluginDetail | null {
   const row = getDb()
-    .prepare(`SELECT ${LIST_COLS}, p.about, p.readme, p.faq, p.permissions, p.install_command, p.author_id, p.created_at
-       FROM plugins p LEFT JOIN users u ON u.id = p.author_id WHERE p.slug = ?`)
+    .prepare(`SELECT ${LIST_COLS}, p.about, p.readme, p.faq, p.permissions, p.install_command, p.author_id, p.created_at, vu.name AS verified_by_name
+       FROM plugins p LEFT JOIN users u ON u.id = p.author_id LEFT JOIN users vu ON vu.id = p.verified_by WHERE p.slug = ?`)
     .get(slug) as unknown as (Omit<PluginListItem, "tags" | "teams"> & {
     about: string;
     readme: string;
@@ -165,6 +169,7 @@ export const getPluginBySlug = cache(function getPluginBySlug(slug: string): Plu
     install_command: string;
     author_id: number;
     created_at: string;
+    verified_by_name: string | null;
   }) | undefined;
   if (!row) return null;
   const [withMeta] = attachTagsAndTeams([row]);
@@ -176,7 +181,7 @@ export const getPluginBySlug = cache(function getPluginBySlug(slug: string): Plu
   try {
     permissions = JSON.parse(row.permissions);
   } catch { /* ignore */ }
-  return { ...withMeta, about: row.about, readme: row.readme, faq, permissions, install_command: row.install_command, author_id: row.author_id, created_at: row.created_at };
+  return { ...withMeta, about: row.about, readme: row.readme, faq, permissions, install_command: row.install_command, author_id: row.author_id, created_at: row.created_at, verified_by_name: row.verified_by_name };
 });
 
 export function getPluginVersions(pluginId: number): VersionRow[] {

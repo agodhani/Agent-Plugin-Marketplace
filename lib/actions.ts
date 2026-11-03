@@ -10,6 +10,7 @@ import { hashPassword, verifyPassword } from "./password";
 import { audit } from "./audit";
 import { loginBlocked, recordLoginFailure, clearLoginFailures } from "./rate-limit";
 import { dbStore } from "./rate-limit-store";
+import { verificationBlockReason } from "./verification";
 import { now, slugify } from "./utils";
 
 export interface ActionState {
@@ -351,6 +352,26 @@ export async function upsertReviewAction(pluginId: number, rating: number, body:
     ).run(pluginId, user.id, rating, body.trim(), now(), now());
     audit(user, "review_posted", "plugin", pluginId, p.name, { rating });
   });
+  revalidatePath(`/plugins/${p.slug}`);
+  return { ok: true };
+}
+
+export async function setPluginVerifiedAction(pluginId: number, verified: boolean): Promise<{ error?: string; ok?: boolean }> {
+  const admin = await requireAdmin();
+  if (!Number.isInteger(pluginId) || typeof verified !== "boolean") return { error: "Invalid request." };
+  const db = getDb();
+  const p = db.prepare(`SELECT id, name, slug, status, author_id, verified_at FROM plugins WHERE id = ?`).get(pluginId) as
+    | { id: number; name: string; slug: string; status: string; author_id: number; verified_at: string | null }
+    | undefined;
+  if (!p) return { error: "Plugin not found." };
+  const reason = verificationBlockReason(p, admin, verified);
+  if (reason) return { error: reason };
+  if (!!p.verified_at === verified) return { ok: true };
+  tx(() => {
+    db.prepare(`UPDATE plugins SET verified_at = ?, verified_by = ? WHERE id = ?`).run(verified ? now() : null, verified ? admin.id : null, p.id);
+    audit(admin, verified ? "plugin_verified" : "plugin_unverified", "plugin", p.id, p.name);
+  });
+  revalidatePath("/");
   revalidatePath(`/plugins/${p.slug}`);
   return { ok: true };
 }

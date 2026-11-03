@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { BadgeCheck, Search } from "lucide-react";
 import { Select } from "./ui/select";
 
 const TYPES = [
@@ -30,6 +30,7 @@ export function SearchFilters({
   const type = params.get("type") ?? "all";
   const tag = params.get("tag") ?? "";
   const team = params.get("team") ?? "";
+  const verified = params.get("verified") === "1";
   const sort = params.get("sort") ?? "recent";
 
   function push(next: Record<string, string>) {
@@ -102,6 +103,13 @@ export function SearchFilters({
             {t.label}
           </button>
         ))}
+        <button
+          aria-pressed={verified}
+          onClick={() => push({ verified: verified ? "" : "1" })}
+          className={`${chip(verified)} inline-flex items-center gap-1`}
+        >
+          <BadgeCheck className="h-3.5 w-3.5" /> Verified
+        </button>
         <span className="mx-1 hidden h-4 w-px bg-slate-300 sm:block" />
         <button onClick={() => push({ tag: "" })} className={chip(!tag)}>
           All tags
