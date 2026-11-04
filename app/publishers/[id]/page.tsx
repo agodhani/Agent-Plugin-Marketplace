@@ -3,23 +3,28 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, Package, Star } from "lucide-react";
 import { getDb } from "@/lib/db";
-import { listPlugins } from "@/lib/queries";
+import { listPlugins, countPlugins, publisherStats, PAGE_SIZE } from "@/lib/queries";
+import { Pagination } from "@/components/pagination";
 import { PluginCard } from "@/components/plugin-card";
 import { fmtDate } from "@/lib/utils";
 
-export default async function PublisherPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PublisherPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string>> }) {
   const { id } = await params;
   const db = getDb();
   const author = db.prepare(`SELECT id, name, email, created_at, is_admin FROM users WHERE id = ?`).get(Number(id)) as
     | { id: number; name: string; email: string; created_at: string; is_admin: number }
     | undefined;
   if (!author) notFound();
-  const items = listPlugins({ authorId: author.id });
+  const sp = await searchParams;
+  const totalItems = countPlugins({ authorId: author.id });
+  const stats = publisherStats(author.id);
+  const lastPage = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  const rp = Number(sp.page);
+  const page = Number.isInteger(rp) && rp >= 1 ? Math.min(rp, lastPage) : 1;
+  const items = listPlugins({ authorId: author.id, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE });
   const playbooks = db.prepare(`SELECT slug, name, description FROM playbooks WHERE author_id = ? ORDER BY name`).all(author.id) as { slug: string; name: string; description: string }[];
-  const installs = items.reduce((s, p) => s + p.downloads, 0);
-  const ratings = items.map((p) => [p.rating_avg * p.rating_count, p.rating_count] as const);
-  const rc = ratings.reduce((s, r) => s + r[1], 0);
-  const avg = rc ? ratings.reduce((s, r) => s + r[0], 0) / rc : 0;
+  const installs = stats.downloads;
+  const avg = stats.avg ?? 0;
 
   return (
     <div className="space-y-6">
@@ -38,7 +43,7 @@ export default async function PublisherPage({ params }: { params: Promise<{ id: 
           />
         </div>
         <div className="flex gap-6 text-center">
-          <div><p className="text-xl font-bold text-slate-900">{items.length}</p><p className="flex items-center gap-1 text-xs text-slate-500"><Package className="h-3 w-3" /> plugins</p></div>
+          <div><p className="text-xl font-bold text-slate-900">{stats.count}</p><p className="flex items-center gap-1 text-xs text-slate-500"><Package className="h-3 w-3" /> plugins</p></div>
           <div><p className="text-xl font-bold text-slate-900">{installs.toLocaleString()}</p><p className="flex items-center gap-1 text-xs text-slate-500"><Download className="h-3 w-3" /> installs</p></div>
           <div><p className="text-xl font-bold text-slate-900">{avg ? avg.toFixed(1) : "—"}</p><p className="flex items-center gap-1 text-xs text-slate-500"><Star className="h-3 w-3" /> avg rating</p></div>
         </div>
@@ -49,7 +54,10 @@ export default async function PublisherPage({ params }: { params: Promise<{ id: 
         {items.length === 0 ? (
           <p className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">Nothing published yet.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{items.map((p) => <PluginCard key={p.id} p={p} />)}</div>
+          <div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{items.map((p) => <PluginCard key={p.id} p={p} />)}</div>
+            <Pagination page={page} pageSize={PAGE_SIZE} total={totalItems} params={{}} />
+          </div>
         )}
       </section>
 

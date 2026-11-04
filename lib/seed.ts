@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
-import { hashPassword } from "./password";
+import { hashPasswordSync as hashPassword } from "./password";
 import { runScans, type ExtractedFile, type SubmitMeta } from "./scan";
 import { createZip } from "./zipstore";
 

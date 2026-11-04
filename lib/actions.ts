@@ -33,7 +33,7 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
   const user = getDb()
     .prepare(`SELECT id, password_hash FROM users WHERE email = ?`)
     .get(email) as { id: number; password_hash: string } | undefined;
-  if (!user || !verifyPassword(password, user.password_hash)) {
+  if (!user || !(await verifyPassword(password, user.password_hash))) {
     recordLoginFailure(email, ip, Date.now(), dbStore);
     return { error: "Invalid email or password." };
   }
@@ -53,10 +53,11 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
   if (db.prepare(`SELECT id FROM users WHERE email = ?`).get(email)) {
     return { error: "An account with that email already exists." };
   }
+  const pwHash = await hashPassword(password);
   const userId = tx(() => {
     const res = db
       .prepare(`INSERT INTO users (name, email, password_hash, is_admin, created_at) VALUES (?, ?, ?, 0, ?)`)
-      .run(name, email, hashPassword(password), now());
+      .run(name, email, pwHash, now());
     const uid = Number(res.lastInsertRowid);
     audit({ id: uid, name }, "user_registered", "user", uid, name);
     return uid;

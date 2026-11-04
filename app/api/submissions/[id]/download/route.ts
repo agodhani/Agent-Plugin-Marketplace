@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { Readable } from "node:stream";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
@@ -21,13 +22,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!sub.file_path || !fs.existsSync(sub.file_path)) {
     return new Response("No archive attached to this submission.", { status: 404 });
   }
-  const data = fs.readFileSync(sub.file_path);
+  const size = fs.statSync(sub.file_path).size;
   const name = `${plugin?.slug ?? "submission"}-${sub.version}-submission.zip`;
-  return new Response(new Uint8Array(data), {
+  const stream = Readable.toWeb(fs.createReadStream(sub.file_path)) as ReadableStream;
+  return new Response(stream, {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="${name}"`,
-      "Content-Length": String(data.length),
+      "Content-Length": String(size),
     },
   });
 }

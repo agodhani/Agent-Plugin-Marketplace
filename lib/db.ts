@@ -150,6 +150,12 @@ CREATE TABLE IF NOT EXISTS api_tokens (
 CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_plugins_status ON plugins(status);
+CREATE INDEX IF NOT EXISTS idx_plugins_author ON plugins(author_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_tags_tag ON plugin_tags(tag);
+CREATE INDEX IF NOT EXISTS idx_team_usage_plugin ON team_usage(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_playbook_items_plugin ON playbook_items(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_submissions_plugin ON submissions(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
 CREATE INDEX IF NOT EXISTS idx_versions_plugin ON versions(plugin_id);
 `;

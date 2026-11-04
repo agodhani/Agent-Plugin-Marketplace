@@ -35,6 +35,7 @@ export function SearchFilters({
 
   function push(next: Record<string, string>) {
     const sp = new URLSearchParams(params.toString());
+    sp.delete("page");
     for (const [k, v] of Object.entries(next)) {
       if (v && v !== "all") sp.set(k, v);
       else sp.delete(k);

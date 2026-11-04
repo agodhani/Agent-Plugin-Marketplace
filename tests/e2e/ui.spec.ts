@@ -98,3 +98,39 @@ test("touch: inline toolbar buttons still work over the stretched link", async (
   await expect(page).toHaveURL("/");
   await ctx.close();
 });
+
+test("star row uses CSS masks, no inline SVGs", async ({ page }) => {
+  await page.goto("/");
+  const card = page.getByRole("article", { name: "GitHub MCP Server", exact: true }).first();
+  const star = card.locator("[title*='review']").first();
+  await expect(star).toBeVisible();
+  expect(await star.locator("svg").count()).toBe(0);
+  await expect(star).toContainText("(");
+  // fill is a sibling, not nested inside the masked outline layer
+  expect(await page.locator(".stars-outline .stars-filled").count()).toBe(0);
+  const fillW = await card.locator(".stars-filled").first().evaluate((el) => getComputedStyle(el).width);
+  expect(fillW).toBe("70px"); // avg 4.7 rounds to 5 filled stars
+  // a no-reviews card still renders its label
+  const d2 = dbRead();
+  const noRev = (d2.prepare(`SELECT slug FROM plugins WHERE status='approved' AND id NOT IN (SELECT plugin_id FROM reviews) LIMIT 1`).get() as { slug: string } | undefined)?.slug;
+  d2.close();
+  if (noRev) {
+    await page.goto(`/plugins/${noRev}`);
+    await expect(page.getByText("No reviews").first()).toBeVisible();
+  }
+});
+
+test("download Content-Length matches body size", async ({ page }) => {
+  const d = dbRead();
+  const id = (d.prepare(`SELECT id FROM plugins WHERE slug='github-mcp'`).get() as { id: number }).id;
+  d.close();
+  await page.goto("/login");
+  await page.fill('input[name="email"]', "alice@acme.dev");
+  await page.fill('input[name="password"]', "password123");
+  await page.click('button:has-text("Sign in")');
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  const res = await page.request.get(`/api/plugins/${id}/download`);
+  expect(res.status()).toBe(200);
+  const body = await res.body();
+  expect(Number(res.headers()["content-length"])).toBe(body.length);
+});

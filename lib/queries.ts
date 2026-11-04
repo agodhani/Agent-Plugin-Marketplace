@@ -111,16 +111,21 @@ function attachTagsAndTeams(rows: Omit<PluginListItem, "tags" | "teams">[]): Plu
   const ratingRows = db
     .prepare(`SELECT plugin_id, AVG(rating) AS avg, COUNT(*) AS c FROM reviews WHERE plugin_id IN (${ph}) GROUP BY plugin_id`)
     .all(...ids) as unknown as { plugin_id: number; avg: number; c: number }[];
+  const tagMap = new Map<number, string[]>();
+  for (const t of tagRows) (tagMap.get(t.plugin_id) ?? tagMap.set(t.plugin_id, []).get(t.plugin_id)!).push(t.tag);
+  const teamMap = new Map<number, { id: number; name: string }[]>();
+  for (const t of teamRows) (teamMap.get(t.plugin_id) ?? teamMap.set(t.plugin_id, []).get(t.plugin_id)!).push({ id: t.id, name: t.name });
+  const ratingMap = new Map(ratingRows.map((x) => [x.plugin_id, x]));
   return rows.map((r) => ({
     ...r,
-    rating_avg: ratingRows.find((x) => x.plugin_id === r.id)?.avg ?? 0,
-    rating_count: ratingRows.find((x) => x.plugin_id === r.id)?.c ?? 0,
-    tags: tagRows.filter((t) => t.plugin_id === r.id).map((t) => t.tag),
-    teams: teamRows.filter((t) => t.plugin_id === r.id).map((t) => ({ id: t.id, name: t.name })),
+    rating_avg: ratingMap.get(r.id)?.avg ?? 0,
+    rating_count: ratingMap.get(r.id)?.c ?? 0,
+    tags: tagMap.get(r.id) ?? [],
+    teams: teamMap.get(r.id) ?? [],
   }));
 }
 
-export function listPlugins(opts: {
+export interface ListPluginsOpts {
   q?: string;
   type?: string;
   tag?: string;
@@ -129,7 +134,12 @@ export function listPlugins(opts: {
   sort?: string;
   verified?: boolean;
   authorId?: number;
-}): PluginListItem[] {
+  rated?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+function buildWhere(opts: ListPluginsOpts): { where: string[]; args: (string | number)[] } {
   const where: string[] = ["p.status = ?"];
   const args: (string | number)[] = [opts.status ?? "approved"];
   if (opts.q) {
@@ -154,12 +164,61 @@ export function listPlugins(opts: {
     where.push("p.author_id = ?");
     args.push(opts.authorId);
   }
-  const order =
-    opts.sort === "name" ? "p.name ASC" : opts.sort === "downloads" ? "p.downloads DESC" : "p.updated_at DESC";
+  if (opts.rated) {
+    where.push("p.id IN (SELECT plugin_id FROM reviews GROUP BY plugin_id)");
+  }
+  return { where, args };
+}
+
+function orderFor(sort?: string): string {
+  if (sort === "name") return "p.name ASC, p.id DESC";
+  if (sort === "downloads") return "p.downloads DESC, p.updated_at DESC, p.id DESC";
+  if (sort === "rating") {
+    return `(SELECT AVG(rating) FROM reviews WHERE plugin_id = p.id) DESC,
+            (SELECT COUNT(*) FROM reviews WHERE plugin_id = p.id) DESC,
+            p.updated_at DESC, p.id DESC`;
+  }
+  return "p.updated_at DESC, p.id DESC";
+}
+
+export function listPlugins(opts: ListPluginsOpts): PluginListItem[] {
+  const { where, args } = buildWhere(opts);
+  const limit = opts.limit !== undefined ? ` LIMIT ${Math.trunc(opts.limit)}` : "";
+  const offset = opts.offset !== undefined ? ` OFFSET ${Math.trunc(opts.offset)}` : "";
   const rows = getDb()
-    .prepare(`${LIST_SELECT} WHERE ${where.join(" AND ")} ORDER BY ${order}`)
+    .prepare(`${LIST_SELECT} WHERE ${where.join(" AND ")} ORDER BY ${orderFor(opts.sort)}${limit}${offset}`)
     .all(...args) as unknown as Omit<PluginListItem, "tags" | "teams">[];
   return attachTagsAndTeams(rows);
+}
+
+export function countPlugins(opts: ListPluginsOpts = {}): number {
+  const { where, args } = buildWhere(opts);
+  const row = getDb()
+    .prepare(`SELECT COUNT(*) AS c FROM plugins p WHERE ${where.join(" AND ")}`)
+    .get(...args) as { c: number };
+  return row.c;
+}
+
+export const PAGE_SIZE = 24;
+
+export function catalogStats(): { count: number; downloads: number } {
+  const row = getDb()
+    .prepare(`SELECT COUNT(*) AS c, COALESCE(SUM(downloads), 0) AS d FROM plugins WHERE status = 'approved'`)
+    .get() as { c: number; d: number };
+  return { count: row.c, downloads: row.d };
+}
+
+export function publisherStats(authorId: number): { count: number; downloads: number; avg: number | null } {
+  const row = getDb()
+    .prepare(`SELECT COUNT(*) c, COALESCE(SUM(p.downloads),0) d,
+        (SELECT AVG(r.rating) FROM reviews r WHERE r.plugin_id IN (SELECT id FROM plugins WHERE author_id = ? AND status = 'approved')) a
+       FROM plugins p WHERE p.author_id = ? AND p.status = 'approved'`)
+    .get(authorId, authorId) as { c: number; d: number; a: number | null };
+  return { count: row.c, downloads: row.d, avg: row.a };
+}
+
+export function teamNames(): { id: number; name: string }[] {
+  return getDb().prepare(`SELECT id, name FROM teams ORDER BY name`).all() as { id: number; name: string }[];
 }
 
 export const getPluginBySlug = cache(function getPluginBySlug(slug: string): PluginDetail | null {
@@ -232,8 +291,18 @@ export function listSubmissions(status?: string, userId?: number): SubmissionRow
 }
 
 export function getSubmission(id: number): SubmissionRow | null {
-  const rows = listSubmissions();
-  return rows.find((r) => r.id === id) ?? null;
+  const rows = getDb()
+    .prepare(
+      `SELECT s.*, u.name AS submitter_name, r.name AS reviewer_name,
+              p.name AS plugin_name, p.slug AS plugin_slug, p.type AS plugin_type
+       FROM submissions s
+       JOIN users u ON u.id = s.submitted_by
+       LEFT JOIN users r ON r.id = s.reviewer_id
+       JOIN plugins p ON p.id = s.plugin_id
+       WHERE s.id = ? LIMIT 1`
+    )
+    .all(id) as unknown as SubmissionRow[];
+  return rows[0] ?? null;
 }
 
 export function allTags(): { tag: string; count: number }[] {

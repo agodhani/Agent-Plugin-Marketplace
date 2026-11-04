@@ -26,7 +26,7 @@ test("ensureSchema: fresh DB gets both columns", () => {
 
 test("ensureSchema: migrates an old DB, preserves rows", () => {
   const db = new DatabaseSync(":memory:");
-  db.exec(`CREATE TABLE plugins (id INTEGER PRIMARY KEY, slug TEXT, status TEXT)`);
+  db.exec(`CREATE TABLE plugins (id INTEGER PRIMARY KEY, slug TEXT, status TEXT, author_id INTEGER)`);
   db.exec(`INSERT INTO plugins (slug, status) VALUES ('old', 'approved')`);
   ensureSchema(db);
   const cols = (db.prepare(`PRAGMA table_info(plugins)`).all() as { name: string }[]).map((c) => c.name);
@@ -41,4 +41,13 @@ test("ensureSchema: second call doesn't throw", () => {
   const db = new DatabaseSync(":memory:");
   ensureSchema(db);
   expect(() => ensureSchema(db)).not.toThrow();
+});
+
+test("ensureSchema creates the new indexes", () => {
+  const db = new DatabaseSync(":memory:");
+  ensureSchema(db);
+  const idx = (db.prepare(`SELECT name FROM sqlite_master WHERE type='index'`).all() as { name: string }[]).map((r) => r.name);
+  for (const n of ["idx_plugin_tags_tag", "idx_team_usage_plugin", "idx_playbook_items_plugin", "idx_audit_created", "idx_submissions_plugin", "idx_plugins_author"]) {
+    expect(idx).toContain(n);
+  }
 });

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, Clock, ListChecks, PackageSearch, Star, TrendingUp } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { allTags, getPlaybookBySlug, listPlaybooks, listPlugins, listTeams } from "@/lib/queries";
+import { allTags, getPlaybookBySlug, listPlaybooks, listPlugins, catalogStats, teamNames, countPlugins, PAGE_SIZE } from "@/lib/queries";
 import { PluginCard } from "@/components/plugin-card";
+import { Pagination } from "@/components/pagination";
 import { FeaturedCard } from "@/components/featured-card";
 import { SearchFilters } from "@/components/search-filters";
 import { Hero } from "@/components/hero";
@@ -55,19 +56,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const verified = pick("verified") === "1";
   const filtering = !!(q || (type && type !== "all") || tag || team || verified);
 
+  const rawPage = Number(pick("page"));
   const user = await getCurrentUser();
-  const all = listPlugins({ status: "approved" });
-  const plugins = filtering ? listPlugins({ q: q || undefined, type, tag: tag || undefined, teamId: team ? Number(team) : undefined, sort, verified: verified || undefined }) : all;
+  const stats = catalogStats();
+  const filterOpts = { q: q || undefined, type, tag: tag || undefined, teamId: team ? Number(team) : undefined, sort, verified: verified || undefined };
+  const total = filtering ? countPlugins(filterOpts) : 0;
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = !filtering ? 1 : Number.isInteger(rawPage) && rawPage >= 1 ? Math.min(rawPage, lastPage) : 1;
+  const plugins = filtering ? listPlugins({ ...filterOpts, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }) : [];
   const tags = allTags();
-  const teams = listTeams().map((t) => ({ id: t.id, name: t.name }));
+  const teams = teamNames();
   const playbooks = listPlaybooks();
 
-  const byDownloads = [...all].sort((a, b) => b.downloads - a.downloads);
+  const byDownloads = listPlugins({ status: "approved", sort: "downloads", limit: 5 });
   const featured = byDownloads[0];
   const trending = byDownloads.slice(1, 5);
-  const recent = [...all].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 4);
-  const topRated = [...all].filter((p) => p.rating_count > 0).sort((a, b) => b.rating_avg - a.rating_avg || b.rating_count - a.rating_count).slice(0, 4);
-  const totalInstalls = all.reduce((s, p) => s + p.downloads, 0);
+  const recent = listPlugins({ status: "approved", limit: 4 });
+  const topRated = listPlugins({ status: "approved", rated: true, sort: "rating", limit: 4 });
+  const totalInstalls = stats.downloads;
 
   const topBook = [...playbooks].sort((a, b) => b.item_count - a.item_count)[0];
   const topBookDetail = topBook ? getPlaybookBySlug(topBook.slug) : null;
@@ -76,7 +82,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
     <div className="space-y-10">
       <Hero
         stats={{
-          items: all.length,
+          items: stats.count,
           installs: totalInstalls,
           teams: teams.length,
           playbooks: playbooks.length,
@@ -104,7 +110,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
 
       <ActivityMarquee />
 
-      <SearchFilters tags={tags} teams={teams} counts={{ total: all.length, filtered: plugins.length }} />
+      <SearchFilters tags={tags} teams={teams} counts={{ total: stats.count, filtered: filtering ? total : stats.count }} />
 
       <div data-testid="catalog-results" className="space-y-10">
       {filtering ? (
@@ -115,8 +121,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             <p className="mt-1 text-sm text-slate-500">Try a different search term or clear the filters.</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {plugins.map((p, i) => <PluginCard key={p.id} p={p} i={i % 6} />)}
+          <div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {plugins.map((p, i) => <PluginCard key={p.id} p={p} i={i % 6} />)}
+            </div>
+            <Pagination page={page} pageSize={PAGE_SIZE} total={total} params={{ q, type: type !== "all" ? type : "", tag, team, sort: sort !== "recent" ? sort : "", verified: verified ? "1" : "" }} />
           </div>
         )
       ) : (

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Boxes, Heart, ListChecks, Menu, Search, ShieldCheck, Upload, Users, X } from "lucide-react";
 import { logoutAction } from "@/lib/actions";
-import { useCommandPalette } from "./command-palette";
+import { useCommandPalette, warmPalette } from "./command-palette";
 import { useIsMac } from "./use-is-mac";
 
 const LINKS = [
@@ -82,6 +82,8 @@ export function NavbarClient({ user }: { user: { name: string; is_admin: number 
           <button
             type="button"
             onClick={open}
+            onPointerEnter={() => warmPalette()}
+            onFocus={() => warmPalette()}
             aria-label="Search the catalog"
             className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/60 px-2.5 py-1.5 text-sm text-slate-500 transition duration-200 hover:border-indigo-300 hover:text-slate-700"
           >

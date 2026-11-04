@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { Readable } from "node:stream";
 import path from "node:path";
 import { NextRequest } from "next/server";
 import { getRequestUser } from "@/lib/auth";
@@ -35,12 +36,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   db.prepare(`UPDATE plugins SET downloads = downloads + 1 WHERE id = ?`).run(plugin.id);
   audit(user, "downloaded", "plugin", plugin.id, plugin.name, { version: version.version });
 
-  const data = fs.readFileSync(version.file_path);
-  return new Response(new Uint8Array(data), {
+  const size = fs.statSync(version.file_path).size;
+  const stream = Readable.toWeb(fs.createReadStream(version.file_path)) as ReadableStream;
+  return new Response(stream, {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="${plugin.slug}-${version.version}.zip"`,
-      "Content-Length": String(data.length),
+      "Content-Length": String(size),
     },
   });
 }
