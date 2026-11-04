@@ -31,13 +31,13 @@ const TYPE_SHADOW: Record<string, string> = {
 
 export function PluginCard({ p, i = 0 }: { p: PluginListItem; i?: number }) {
   return (
-    <Link
-      href={`/plugins/${p.slug}`}
+    <article
+      aria-label={p.name}
       style={{ ["--accent" as string]: ACCENTS[p.type], ["--i" as string]: i }}
       title={`${p.name} · updated ${fmtDate(p.updated_at)}`}
       className={`card-accent spotlight enter group relative flex flex-col rounded-2xl bg-white p-4 pt-5 ring-1 ring-slate-200 transition duration-200 hover:-translate-y-1 hover:shadow-xl ${TYPE_SHADOW[p.type] ?? "hover:shadow-slate-200/70"}`}
     >
-      <span className="card-actions flex items-center justify-end gap-1.5">
+      <span className="card-actions relative z-10 flex items-center justify-end gap-1.5">
         <FavButton id={p.id} name={p.name} />
         <CompareButton item={{ id: p.id, slug: p.slug, name: p.name }} />
         <AddToTrayButton item={{ id: p.id, slug: p.slug, name: p.name, type: p.type }} />
@@ -48,8 +48,13 @@ export function PluginCard({ p, i = 0 }: { p: PluginListItem; i?: number }) {
         </span>
         <div className="min-w-0">
           <div className="flex items-start gap-1">
-            <span className="line-clamp-2 leading-snug font-semibold text-slate-900 group-hover:text-indigo-700">{p.name}</span>
-            {p.verified_at && <VerifiedMark className="mt-0.5" />}
+            <Link
+              href={`/plugins/${p.slug}`}
+              className="line-clamp-2 leading-snug font-semibold text-slate-900 outline-none group-hover:text-indigo-700 after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-indigo-400"
+            >
+              {p.name}
+            </Link>
+            {p.verified_at && <VerifiedMark className="relative z-10 mt-0.5" />}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <VersionChip version={p.current_version} />
@@ -82,6 +87,6 @@ export function PluginCard({ p, i = 0 }: { p: PluginListItem; i?: number }) {
           )}
         </span>
       </div>
-    </Link>
+    </article>
   );
 }

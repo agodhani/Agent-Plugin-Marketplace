@@ -5,7 +5,7 @@ test.describe("reviews", () => {
   test("seeded ratings show on cards and detail; posting a review works", async ({ page }) => {
     await page.goto("/");
     // github-mcp card shows its seeded rating
-    const card = page.locator('a[href="/plugins/github-mcp"]');
+    const card = page.getByRole("article", { name: "GitHub MCP Server", exact: true }).first();
     await expect(card.getByText("(3)")).toBeVisible();
 
     await login(page, ALICE.email, ALICE.password);

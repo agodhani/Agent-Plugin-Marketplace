@@ -108,7 +108,7 @@ test.describe("premium experience", () => {
 
   test("hovering a card reveals its action toolbar", async ({ page }) => {
     await page.goto("/");
-    const card = page.locator('a[href="/plugins/github-mcp"].card-accent').first();
+    const card = page.getByRole("article", { name: "GitHub MCP Server", exact: true }).first();
     const toolbar = card.locator(".card-actions");
     await expect.poll(async () => toolbar.evaluate((el) => getComputedStyle(el).opacity)).toBe("0");
     await card.hover();

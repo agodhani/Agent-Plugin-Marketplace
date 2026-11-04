@@ -128,6 +128,7 @@ export function listPlugins(opts: {
   status?: string;
   sort?: string;
   verified?: boolean;
+  authorId?: number;
 }): PluginListItem[] {
   const where: string[] = ["p.status = ?"];
   const args: (string | number)[] = [opts.status ?? "approved"];
@@ -149,6 +150,10 @@ export function listPlugins(opts: {
     args.push(opts.teamId);
   }
   if (opts.verified) where.push("p.verified_at IS NOT NULL");
+  if (opts.authorId !== undefined) {
+    where.push("p.author_id = ?");
+    args.push(opts.authorId);
+  }
   const order =
     opts.sort === "name" ? "p.name ASC" : opts.sort === "downloads" ? "p.downloads DESC" : "p.updated_at DESC";
   const rows = getDb()

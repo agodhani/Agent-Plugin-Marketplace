@@ -7,12 +7,12 @@ test.describe("install tray", () => {
     await page.goto("/");
 
     // add two plugins from their cards — adding shows a toast instead of opening the drawer
-    await page.locator('a[href="/plugins/github-mcp"].card-accent').first().getByRole("button", { name: /Add .* to tray/ }).click();
+    await page.getByRole("article", { name: "GitHub MCP Server", exact: true }).first().getByRole("button", { name: /Add .* to tray/ }).click();
     await expect(page.getByRole("button", { name: "Open tray" })).toBeVisible();
     await page.getByRole("button", { name: "Open tray" }).click();
     await expect(page.getByRole("heading", { name: "Install tray" })).toBeVisible();
     await page.getByRole("button", { name: "Close tray" }).click();
-    await page.locator('a[href="/plugins/code-review-assistant"].card-accent').first().getByRole("button", { name: /Add .* to tray/ }).click();
+    await page.getByRole("article", { name: "Code Review Assistant", exact: true }).first().getByRole("button", { name: /Add .* to tray/ }).click();
     // open the drawer via the floating tray pill
     await page.getByRole("button", { name: /Install tray/ }).click();
 

@@ -21,10 +21,10 @@ const auditCount = (slug: string) => {
 
 test("logged out: mark on verified card only, inside its box; detail shows badge + row, no heading", async ({ page }) => {
   await page.goto("/");
-  const card = page.locator('main a[href="/plugins/secret-linter"]:has([aria-label="Verified"])').first();
+  const card = page.getByRole("article", { name: "Secret Linter", exact: true }).first();
   const mark = card.getByRole("img", { name: "Verified" }).first();
   await expect(mark).toBeVisible();
-  await expect(page.locator('a[href="/plugins/github-mcp"]').getByRole("img", { name: "Verified" })).toHaveCount(0);
+  await expect(page.getByRole("article", { name: "GitHub MCP Server", exact: true }).getByRole("img", { name: "Verified" })).toHaveCount(0);
   const cb = await card.boundingBox(), mb = await mark.boundingBox();
   expect(mb!.x).toBeGreaterThanOrEqual(cb!.x - 1);
   expect(mb!.y).toBeGreaterThanOrEqual(cb!.y - 1);
@@ -57,7 +57,7 @@ test("filter chip toggles verified=1 and narrows catalog to verified cards", asy
   await expect(chip).toHaveAttribute("aria-pressed", "true");
   const results = page.locator("[data-testid=catalog-results]");
   await expect(results).toBeVisible();
-  const cards = results.locator("a[href^='/plugins/']");
+  const cards = results.getByRole("article");
   await expect(cards.first()).toBeVisible();
   for (const c of await cards.all()) {
     await expect(c.getByRole("img", { name: "Verified" })).toHaveCount(1);
@@ -95,7 +95,7 @@ test.describe.serial("admin verify/remove + replay enforcement", () => {
 
     const anon = await browser.newPage();
     await anon.goto("/");
-    await expect(anon.locator('a[href="/plugins/pr-summarizer"]').getByRole("img", { name: "Verified" })).toBeVisible();
+    await expect(anon.getByRole("article", { name: "PR Summarizer", exact: true }).first().getByRole("img", { name: "Verified" })).toBeVisible();
     await anon.close();
 
     await page.getByRole("button", { name: "Remove verification" }).click();

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, Package, Star } from "lucide-react";
 import { getDb } from "@/lib/db";
-import { listPlugins, reviewsForPlugin, type PluginListItem } from "@/lib/queries";
+import { listPlugins } from "@/lib/queries";
 import { PluginCard } from "@/components/plugin-card";
 import { fmtDate } from "@/lib/utils";
 
@@ -14,7 +14,7 @@ export default async function PublisherPage({ params }: { params: Promise<{ id: 
     | { id: number; name: string; email: string; created_at: string; is_admin: number }
     | undefined;
   if (!author) notFound();
-  const items = listPlugins({ status: "approved" }).filter((p) => p.author_name === author.name);
+  const items = listPlugins({ authorId: author.id });
   const playbooks = db.prepare(`SELECT slug, name, description FROM playbooks WHERE author_id = ? ORDER BY name`).all(author.id) as { slug: string; name: string; description: string }[];
   const installs = items.reduce((s, p) => s + p.downloads, 0);
   const ratings = items.map((p) => [p.rating_avg * p.rating_count, p.rating_count] as const);
