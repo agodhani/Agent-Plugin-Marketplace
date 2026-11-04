@@ -58,7 +58,7 @@ export default async function ComparePage({ searchParams }: { params: Promise<ne
     { label: "Teams using", cell: (r) => r.teams.length ? <span className="inline-flex items-center gap-1 text-sm"><Users className="h-3.5 w-3.5 text-slate-400" />{r.teams.join(", ")}</span> : <span className="text-slate-400">—</span> },
     { label: "Permissions", cell: (r) => perm(r).length ? <ul className="space-y-0.5">{perm(r).map((x) => <li key={x} className="text-xs text-slate-600">{PERMISSIONS.find((y) => y.id === x)?.label ?? x}</li>)}</ul> : <span className="text-xs text-slate-400">none declared</span> },
     { label: "Tags", cell: (r) => <span className="flex flex-wrap gap-1">{r.tags.map((t) => <span key={t} className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{t}</span>)}</span> },
-    { label: "Install", cell: (r) => <code className="block truncate rounded bg-slate-900 px-2 py-1 font-mono text-[11px] text-slate-100">{r.install_command}</code> },
+    { label: "Install", cell: (r) => <code className="block truncate rounded bg-slate-900 px-2 py-1 font-mono text-[11px] text-slate-100">{`agenthub install ${r.slug}`}</code> },
   ];
 
   return (

@@ -15,7 +15,7 @@ export default async function PlaybookPage({ params }: { params: Promise<{ slug:
   const [user, pb] = await Promise.all([getCurrentUser(), Promise.resolve(getPlaybookBySlug(slug))]);
   if (!pb) notFound();
   const canEdit = !!user && (user.id === pb.author_id || !!user.is_admin);
-  const installCmd = `amp playbook install ${pb.slug}`;
+  const installCmd = `agenthub playbook install ${pb.slug}`;
 
   return (
     <div className="space-y-6">

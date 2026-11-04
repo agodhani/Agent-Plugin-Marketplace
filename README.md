@@ -19,6 +19,7 @@ An agent-agnostic internal marketplace for sharing **skills**, **MCP servers**, 
 - **Auth** — register/login; profile page has an admin toggle for testing
 - **Governance pipeline** — submit → validation scan (manifest, README, archive hygiene) → security scan (exec/network/secrets/fs rules) → risk score from declared permissions + findings → admin approve/reject
 - **Versioning & audit** — semver versions with changelogs; every submit/approve/reject/version/team-mark/download is audit-logged (per-plugin Activity tab + admin audit view)
+- **Verified badges** — admins can mark vetted, officially supported plugins as Verified; the badge shows on cards, detail pages, compare and search, with a Verified filter chip on the catalog
 
 ## Run
 
@@ -46,6 +47,31 @@ npm test          # Playwright E2E suite (builds + serves on :3100 against a fre
 | bob@acme.dev / priya@acme.dev | password123 | member |
 
 The seed includes 8 approved catalog items and 1 pending high-risk submission so the review queue is populated.
+
+## Install from the terminal
+
+The AgentHub CLI is a single zero-dependency file, served at `/agenthub.mjs` (see `/cli` in the app for the full setup):
+
+```bash
+mkdir -p ~/.agenthub && curl -fsSL http://localhost:3000/agenthub.mjs -o ~/.agenthub/agenthub.mjs
+alias agenthub="node ~/.agenthub/agenthub.mjs"
+agenthub login --url http://localhost:3000 --token <token>   # token: Profile → Access tokens
+agenthub install github-mcp --agent claude
+agenthub playbook install frontend-agent-kit --agent cursor
+```
+
+Raw downloads also work with a token: `curl -fsSL -H "Authorization: Bearer $AGENTHUB_TOKEN" "$URL/api/plugins/<id>/download" -o <slug>.zip`
+
+| `--agent` | Skills go to | MCP config |
+|---|---|---|
+| `claude` | `.claude/skills/<slug>` | `.mcp.json` |
+| `cursor` | `.cursor/skills/<slug>` | `.cursor/mcp.json` |
+| `devin` | `.devin/skills/<slug>` | `.devin/mcp_config.json` |
+| `generic` (default) | `.agents/skills/<slug>` | — (snippet printed) |
+
+MCP, plugin and documentation packages always install to `.agenthub/<slug>`.
+
+API endpoints: `GET /api/v1/me` · `GET /api/v1/plugins/[slug]/files?v=` · `GET /api/v1/playbooks/[slug]`
 
 ## Submission pipeline
 

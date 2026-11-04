@@ -105,7 +105,7 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       about:
         "Code Review Assistant gives your agent a consistent review rubric: correctness, security, performance and readability passes, plus a comment-drafting format your team can tune.",
       readme:
-        "## Usage\n\nPoint your agent at a diff and ask for a review.\n\n```bash\namp install code-review-assistant\n```\n\n## What it checks\n\n- Correctness and edge cases\n- Security smells (injection, unsafe eval, secrets)\n- Performance hotspots\n- Readability and naming\n",
+        "## Usage\n\nPoint your agent at a diff and ask for a review.\n\n```bash\nagenthub install code-review-assistant\n```\n\n## What it checks\n\n- Correctness and edge cases\n- Security smells (injection, unsafe eval, secrets)\n- Performance hotspots\n- Readability and naming\n",
       faq: [
         { q: "Which agents does it work with?", a: "Any agent that can load a SKILL.md — it is plain markdown with a manifest." },
         { q: "Can I customize the rubric?", a: "Yes. Fork the skill and edit checklist.md, then submit a new version." },
@@ -113,7 +113,7 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       ],
       permissions: ["read:files"],
       tags: ["code-review", "productivity", "typescript"],
-      install: "amp install code-review-assistant",
+      install: "agenthub install code-review-assistant",
       files: [
         {
           name: "skill.json",
@@ -148,19 +148,19 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       about:
         "A Model Context Protocol server that wraps the GitHub REST API — list issues, read PRs, create comments and search code. Requires a GITHUB_TOKEN environment variable.",
       readme:
-        "## Setup\n\n```bash\nexport GITHUB_TOKEN=ghp_...\namp install github-mcp\n```\n\nThen register the server in your agent config:\n\n```json\n{ \"mcpServers\": { \"github\": { \"command\": \"npx\", \"args\": [\"github-mcp\"] } } }\n```\n",
+        "## Setup\n\n```bash\nexport GITHUB_TOKEN=ghp_...\nagenthub install github-mcp --agent claude\n```\n\nThe CLI registers the server in .mcp.json automatically.\n",
       faq: [
         { q: "What permissions does the token need?", a: "repo:read for read-only tools, repo for commenting." },
         { q: "Does it work with GitHub Enterprise?", a: "Yes — set GITHUB_API_URL to your GHE endpoint." },
       ],
       permissions: ["network", "env"],
       tags: ["github", "vcs", "api"],
-      install: "amp install github-mcp",
+      install: "agenthub install github-mcp",
       files: [
         {
           name: "mcp.json",
           content: JSON.stringify(
-            { name: "github-mcp", version: "2.0.1", description: "GitHub tools over MCP", permissions: ["network", "env"] },
+            { name: "github-mcp", version: "2.0.1", description: "GitHub tools over MCP", permissions: ["network", "env"], server: { command: "node", args: ["${PLUGIN_DIR}/src/index.ts"], env: ["GITHUB_TOKEN"] } },
             null, 2
           ),
         },
@@ -192,18 +192,18 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       about:
         "Gives agents schema awareness: list tables, describe columns, run EXPLAIN and execute read-only queries against a configured DSN.",
       readme:
-        "## Config\n\n```bash\nexport PG_DSN=postgres://readonly:***@db.internal:5432/app\namp install postgres-mcp\n```\n\nAll queries run inside a read-only transaction.\n",
+        "## Config\n\n```bash\nexport PG_DSN=postgres://readonly:***@db.internal:5432/app\nagenthub install postgres-mcp --agent claude\n```\n\nAll queries run inside a read-only transaction.\n",
       faq: [
         { q: "Can it write to the database?", a: "No. The tool forces BEGIN READ ONLY for every session." },
         { q: "Does it support multiple databases?", a: "One DSN per server instance; run multiple instances for multiple DBs." },
       ],
       permissions: ["network", "env"],
       tags: ["database", "sql", "postgres"],
-      install: "amp install postgres-mcp",
+      install: "agenthub install postgres-mcp",
       files: [
         {
           name: "mcp.json",
-          content: JSON.stringify({ name: "postgres-mcp", version: "1.0.0", description: "Read-only Postgres tools", permissions: ["network", "env"] }, null, 2),
+          content: JSON.stringify({ name: "postgres-mcp", version: "1.0.0", description: "Read-only Postgres tools", permissions: ["network", "env"], server: { command: "python3", args: ["${PLUGIN_DIR}/src/server.py"], env: ["PG_DSN"] } }, null, 2),
         },
         {
           name: "src/server.py",
@@ -224,14 +224,14 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       summary: "Generates concise PR descriptions and reviewer checklists from a diff.",
       about:
         "Reads a diff and produces: a one-paragraph summary, a bullet list of behavioral changes, and a reviewer checklist. Great for large mechanical changes.",
-      readme: "## Usage\n\n```bash\namp install pr-summarizer\n```\n\nAsk your agent: *summarize this branch*.\n",
+      readme: "## Usage\n\n```bash\nagenthub install pr-summarizer\n```\n\nAsk your agent: *summarize this branch*.\n",
       faq: [
         { q: "Does it post to GitHub?", a: "No — it produces markdown you can paste or pipe into another tool." },
         { q: "Can it handle huge diffs?", a: "It chunks large diffs and summarizes per-file first." },
       ],
       permissions: ["read:files"],
       tags: ["docs", "productivity", "github"],
-      install: "amp install pr-summarizer",
+      install: "agenthub install pr-summarizer",
       files: [
         { name: "SKILL.md", content: "# PR Summarizer\n\nProduce: summary paragraph, changes list, reviewer checklist.\n" },
         {
@@ -256,14 +256,14 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       about:
         "Wraps the internal deploy API: trigger a pipeline, watch rollout status, roll back on failure. Powerful — requires execute and network permissions.",
       readme:
-        "## Usage\n\n```bash\namp install deploy-automation\n```\n\nRequires DEPLOY_API_TOKEN. Supports `deploy`, `status`, and `rollback` commands.\n",
+        "## Usage\n\n```bash\nagenthub install deploy-automation\n```\n\nRequires DEPLOY_API_TOKEN. Supports `deploy`, `status`, and `rollback` commands.\n",
       faq: [
         { q: "Why is the risk rating high?", a: "It can execute commands and call the deploy API — both flagged by the security scan." },
         { q: "Is there a dry-run mode?", a: "Yes: `deploy --dry-run` previews the pipeline without executing." },
       ],
       permissions: ["execute", "network", "env"],
       tags: ["devops", "deploy", "ci-cd"],
-      install: "amp install deploy-automation",
+      install: "agenthub install deploy-automation",
       files: [
         {
           name: "plugin.json",
@@ -327,14 +327,14 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       about:
         "Scans staged diffs for ~120 secret patterns (AWS, GitHub, Slack, private keys) and blocks the commit with a remediation hint.",
       readme:
-        "## Usage\n\n```bash\namp install secret-linter\n```\n\nRuns automatically as a pre-commit hook via husky.\n",
+        "## Usage\n\n```bash\nagenthub install secret-linter\n```\n\nRuns automatically as a pre-commit hook via husky.\n",
       faq: [
         { q: "Does it send code anywhere?", a: "No — fully offline regex + entropy scanning." },
         { q: "Can I add custom patterns?", a: "Yes, drop them in patterns.txt and resubmit." },
       ],
       permissions: ["read:files"],
       tags: ["security", "lint", "secrets"],
-      install: "amp install secret-linter",
+      install: "agenthub install secret-linter",
       files: [
         {
           name: "plugin.json",
@@ -364,18 +364,18 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       about:
         "Exposes warehouse tables as MCP resources and adds an export tool that writes query results to parquet in a scratch bucket.",
       readme:
-        "## Config\n\n```bash\nexport WAREHOUSE_DSN=...\nexport EXPORT_BUCKET=...\namp install warehouse-sync\n```\n",
+        "## Config\n\n```bash\nexport WAREHOUSE_DSN=...\nexport EXPORT_BUCKET=...\nagenthub install warehouse-sync\n```\n",
       faq: [
         { q: "Where do exports go?", a: "A per-user scratch bucket; they expire after 7 days." },
         { q: "Row limits?", a: "Exports cap at 1M rows per call." },
       ],
       permissions: ["network", "env", "write:files"],
       tags: ["data", "warehouse", "analytics"],
-      install: "amp install warehouse-sync",
+      install: "agenthub install warehouse-sync",
       files: [
         {
           name: "mcp.json",
-          content: JSON.stringify({ name: "warehouse-sync", version: "1.3.2", description: "Warehouse tools", permissions: ["network", "env", "write:files"] }, null, 2),
+          content: JSON.stringify({ name: "warehouse-sync", version: "1.3.2", description: "Warehouse tools", permissions: ["network", "env", "write:files"], server: { command: "node", args: ["${PLUGIN_DIR}/src/sync.ts"], env: ["WAREHOUSE_DSN", "EXPORT_BUCKET"] } }, null, 2),
         },
         {
           name: "src/sync.ts",
@@ -396,11 +396,11 @@ export function seedIfEmpty(db: DatabaseSync, uploadDir: string) {
       summary: "Grab bag of helper utilities for agents — formatting, HTTP, shortcuts.",
       about:
         "A collection of convenience helpers contributed by the community. Bundles several scripts into one plugin.",
-      readme: "## Usage\n\n```bash\namp install awesome-utility-pack\n```\n",
+      readme: "## Usage\n\n```bash\nagenthub install awesome-utility-pack\n```\n",
       faq: [{ q: "Who maintains this?", a: "Community maintained — see contributors." }],
       permissions: ["execute", "network", "secrets"],
       tags: ["utilities", "community"],
-      install: "amp install awesome-utility-pack",
+      install: "agenthub install awesome-utility-pack",
       files: [
         {
           name: "plugin.json",

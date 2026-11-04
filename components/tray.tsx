@@ -94,47 +94,25 @@ export function AddToTrayButton({ item, className = "" }: { item: TrayItem; clas
   );
 }
 
-export type Target = "amp" | "claude" | "cursor" | "download";
+export type Target = "cli" | "claude" | "cursor" | "download";
 
 const TARGETS: { id: Target; label: string }[] = [
-  { id: "amp", label: "AgentHub CLI" },
+  { id: "cli", label: "AgentHub CLI" },
   { id: "claude", label: "Claude Code" },
   { id: "cursor", label: "Cursor" },
   { id: "download", label: "Raw zips" },
 ];
 
 export function buildInstall(target: Target, items: TrayItem[], origin: string): string {
-  if (target === "amp") {
-    return `amp install ${items.map((i) => i.slug).join(" ")}`;
-  }
-  if (target === "download") {
-    return items.map((i) => `curl -sL "${origin}/api/plugins/${i.id}/download" -o ${i.slug}.zip`).join("\n");
-  }
-  const file = target === "claude" ? "~/.claude/mcp.json" : ".cursor/mcp.json";
-  const mcps = items.filter((i) => i.type === "mcp");
-  const others = items.filter((i) => i.type !== "mcp");
-  const out: string[] = [];
-  if (mcps.length) {
-    out.push(`# MCP servers — merge into ${file}`);
-    out.push(`{`);
-    out.push(`  "mcpServers": {`);
-    mcps.forEach((i, idx) => {
-      out.push(`    "${i.slug}": { "command": "npx", "args": ["-y", "@acme/${i.slug}"] }${idx < mcps.length - 1 ? "," : ""}`);
-    });
-    out.push(`  }`);
-    out.push(`}`);
-  }
-  if (others.length) {
-    if (out.length) out.push("");
-    out.push(`# ${target === "claude" ? "Skills / plugins / docs" : "Other items"} — install via AgentHub CLI:`);
-    out.push(`amp install ${others.map((i) => i.slug).join(" ")}`);
-  }
-  return out.join("\n");
+  const slugs = items.map((i) => i.slug).join(" ");
+  if (target === "cli") return `agenthub install ${slugs}`;
+  if (target === "claude" || target === "cursor") return `agenthub install ${slugs} --agent ${target}`;
+  return items.map((i) => `curl -fsSL -H "Authorization: Bearer $AGENTHUB_TOKEN" "${origin}/api/plugins/${i.id}/download" -o ${i.slug}.zip`).join("\n");
 }
 
 export function InstallTray({ isLoggedIn }: { isLoggedIn: boolean }) {
   const { items, remove, clear, open, setOpen } = useTray();
-  const [target, setTarget] = useState<Target>("amp");
+  const [target, setTarget] = useState<Target>("cli");
   const [pbName, setPbName] = useState("");
   const [pbMsg, setPbMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -217,11 +195,12 @@ export function InstallTray({ isLoggedIn }: { isLoggedIn: boolean }) {
                       ))}
                     </div>
                   </div>
-                  <div className="relative mt-3">
-                    <pre className="max-h-56 overflow-auto rounded-lg bg-slate-900 p-3 font-mono text-[11px] leading-relaxed text-slate-100">{command}</pre>
-                    <div className="absolute right-2 top-2">
-                      <CopyButton text={command} className="border-slate-700 !bg-slate-800 !text-slate-200 hover:!bg-slate-700" />
+                  <div className="mt-3 overflow-hidden rounded-lg bg-slate-900">
+                    <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-1.5">
+                      <span className="truncate font-mono text-[11px] text-slate-400">terminal</span>
+                      <CopyButton text={command} className="border-0 !bg-transparent !px-1.5 !py-0.5 !text-slate-300 hover:!bg-white/10" />
                     </div>
+                    <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words p-3 font-mono text-[11px] leading-relaxed text-slate-100">{command}</pre>
                   </div>
 
                   {isLoggedIn && (

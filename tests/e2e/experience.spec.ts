@@ -43,7 +43,7 @@ test.describe("premium experience", () => {
     await page.getByRole("button", { name: "Copy", exact: true }).click();
     await expect(page.getByText("Copied to clipboard")).toBeVisible();
     const clip = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clip).toContain("amp install github-mcp");
+    expect(clip).toContain("agenthub install github-mcp");
   });
 
   test("activity marquee animates and stops under reduced motion", async ({ page }) => {
@@ -156,14 +156,12 @@ test.describe("premium experience", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/plugins/github-mcp");
     const install = page.locator("aside").first();
-    await expect(install.getByText("amp install github-mcp")).toBeVisible();
+    await expect(install.getByText("agenthub install github-mcp")).toBeVisible();
     await install.getByRole("button", { name: "Claude Code" }).click();
-    await expect(install.getByText('"mcpServers"')).toBeVisible();
-    await expect(install.getByText('"github-mcp"')).toBeVisible();
+    await expect(install.getByText("agenthub install github-mcp --agent claude")).toBeVisible();
     await install.getByRole("button", { name: "Copy" }).click();
     const clip = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clip).toContain('"mcpServers"');
-    expect(clip).toContain('"github-mcp"');
+    expect(clip).toContain('agenthub install github-mcp --agent claude');
   });
 
   test("hero catalog-items stat matches the filters total", async ({ page }) => {
@@ -218,10 +216,10 @@ test.describe("premium experience", () => {
   test("playbook detail shows the terminal install block and copy toasts", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/playbooks/frontend-agent-kit");
-    await expect(page.getByText("amp playbook install frontend-agent-kit")).toBeVisible();
+    await expect(page.getByText("agenthub playbook install frontend-agent-kit")).toBeVisible();
     await page.getByRole("button", { name: "Copy command" }).click();
     await expect(page.getByText("Copied to clipboard")).toBeVisible();
     const clip = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clip).toBe("amp playbook install frontend-agent-kit");
+    expect(clip).toBe("agenthub playbook install frontend-agent-kit");
   });
 });

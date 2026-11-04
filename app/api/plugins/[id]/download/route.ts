@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { NextRequest } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getRequestUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { audit } from "@/lib/audit";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await getCurrentUser();
+  const user = await getRequestUser(req);
   if (!user) return new Response("Unauthorized — please log in.", { status: 401 });
 
   const db = getDb();

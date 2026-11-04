@@ -6,6 +6,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { mySubmissions, myTeams } from "@/lib/queries";
 import { RiskBadge, StatusBadge } from "@/components/badges";
 import { AdminToggle } from "@/components/admin-toggle";
+import { TokenManager } from "@/components/token-manager";
+import { listTokens } from "@/lib/tokens";
 import { adminToggleEnabled } from "@/lib/flags";
 import { fmtDateTime } from "@/lib/utils";
 
@@ -57,6 +59,8 @@ export default async function ProfilePage() {
           <p className="text-sm text-slate-500">Not in any team — <Link href="/teams" className="text-indigo-600 hover:underline">browse teams</Link>.</p>
         )}
       </div>
+
+      <TokenManager tokens={listTokens(user.id)} />
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="mb-3 font-semibold text-slate-900">My submissions</h2>

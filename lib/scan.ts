@@ -249,6 +249,24 @@ export function runValidation(files: ExtractedFile[], meta: SubmitMeta): Validat
       "warning",
       typeof manifest.description === "string" ? "description is set." : "Manifest is missing a description field."
     );
+    const srv = manifest.server as { command?: unknown; args?: unknown; env?: unknown } | undefined;
+    if (srv !== undefined) {
+      const serverOk =
+        srv !== null &&
+        typeof srv === "object" &&
+        typeof srv.command === "string" &&
+        srv.command.length > 0 &&
+        (srv.args === undefined || (Array.isArray(srv.args) && srv.args.every((a) => typeof a === "string"))) &&
+        (srv.env === undefined || (Array.isArray(srv.env) && srv.env.every((e) => typeof e === "string" && /^[A-Z_][A-Z0-9_]*$/.test(e))));
+      push("manifest-server", "Valid server launch command", serverOk, "error",
+        serverOk
+          ? `server: ${srv.command}`
+          : "server must be { command: string, args?: string[], env?: UPPER_SNAKE names }.");
+    }
+    if (meta.type === "mcp" && srv === undefined) {
+      push("manifest-server", "MCP server launch command", false, "warning",
+        "No server launch command in the manifest — the CLI will install the files but can't register the MCP server.");
+    }
   }
 
   // Type-specific expectations

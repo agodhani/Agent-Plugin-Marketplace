@@ -64,7 +64,7 @@ export function SubmitForm() {
           </div>
           <div>
             <label className={label}>Install command</label>
-            <input name="install_command" className={input} placeholder="amp install my-skill" />
+            <input name="install_command" className={input} placeholder="agenthub install my-skill" />
           </div>
           <div className="sm:col-span-2">
             <label className={label}>Tags (comma separated)</label>
@@ -116,7 +116,7 @@ export function SubmitForm() {
               name="readme"
               rows={8}
               className={`${input} font-mono text-xs`}
-              placeholder={"## Usage\n\n```bash\namp install my-skill\n```"}
+              placeholder={"## Usage\n\n```bash\nagenthub install my-skill\n```"}
             />
           </div>
           <div>

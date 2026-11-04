@@ -51,7 +51,7 @@ function ItemLine({ it, done }: { it: TerminalItem; done: boolean }) {
 
 export function HeroTerminal({ playbookSlug, items }: { playbookSlug: string; items: TerminalItem[] }) {
   const reduced = useReducedMotion();
-  const cmd = `amp playbook install ${playbookSlug}`;
+  const cmd = `agenthub playbook install ${playbookSlug}`;
 
   const [typed, setTyped] = useState(0);
   const [shown, setShown] = useState(0); // lines visible (spinner or check)

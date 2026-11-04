@@ -21,14 +21,12 @@ test.describe("install tray", () => {
     await expect(page.getByText("github-mcp · mcp")).toBeVisible();
     await expect(page.getByText("code-review-assistant · skill")).toBeVisible();
 
-    // default target: one amp command for the whole set
-    await expect(page.locator("pre")).toContainText("amp install github-mcp code-review-assistant");
+    // default target: one cli command for the whole set
+    await expect(page.locator("pre")).toContainText("agenthub install github-mcp code-review-assistant");
 
-    // Claude Code target emits an mcp.json block + amp line for the skill
+    // Claude Code target emits the same install with --agent claude
     await page.getByRole("button", { name: "Claude Code" }).click();
-    await expect(page.locator("pre")).toContainText('"mcpServers"');
-    await expect(page.locator("pre")).toContainText('"github-mcp"');
-    await expect(page.locator("pre")).toContainText("amp install code-review-assistant");
+    await expect(page.locator("pre")).toContainText("agenthub install github-mcp code-review-assistant --agent claude");
 
     // save the tray as a playbook
     const name = `Tray Playbook ${Date.now()}`;

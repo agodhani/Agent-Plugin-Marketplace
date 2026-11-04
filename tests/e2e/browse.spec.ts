@@ -42,7 +42,7 @@ test.describe("browse & discovery", () => {
   test("plugin detail page shows tabs, install command and versions", async ({ page }) => {
     await page.goto("/plugins/github-mcp");
     await expect(page.getByRole("heading", { name: "GitHub MCP Server" })).toBeVisible();
-    await expect(page.getByText("amp install github-mcp").first()).toBeVisible();
+    await expect(page.getByText("agenthub install github-mcp").first()).toBeVisible();
     // tabs
     await page.getByRole("tab", { name: "README" }).click();
     await expect(page.getByText(/GITHUB_API_URL|GITHUB_TOKEN/).first()).toBeVisible();

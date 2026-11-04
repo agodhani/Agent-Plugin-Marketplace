@@ -25,6 +25,15 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Ses
   return row ?? null;
 });
 
+export async function getRequestUser(req: Request): Promise<SessionUser | null> {
+  const header = req.headers.get("authorization");
+  if (header?.startsWith("Bearer ")) {
+    const { userForToken } = await import("./tokens");
+    return userForToken(header.slice(7).trim());
+  }
+  return getCurrentUser();
+}
+
 export function canViewPlugin(p: { status: string; author_id: number | null }, user: SessionUser | null): boolean {
   return p.status === "approved" || !!user?.is_admin || (!!user && user.id === p.author_id);
 }

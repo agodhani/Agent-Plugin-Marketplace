@@ -40,6 +40,8 @@ export function describeAudit(action: string): string {
     playbook_item_removed: "removed a plugin from a playbook",
     review_posted: "posted a review",
     user_registered: "registered an account",
+    token_created: "created an access token",
+    token_revoked: "revoked an access token",
   };
   return map[action] ?? action.replaceAll("_", " ");
 }

@@ -138,7 +138,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
               <Link key={pb.id} href={`/playbooks/${pb.slug}`} className="group rounded-2xl bg-white p-4 ring-1 ring-fuchsia-200/80 transition duration-200 hover:-translate-y-0.5 hover:ring-fuchsia-300 hover:shadow-lg hover:shadow-fuchsia-200/50">
                 <div className="font-semibold text-slate-900 group-hover:text-fuchsia-700">{pb.name}</div>
                 <p className="mt-1 line-clamp-2 text-sm text-slate-600">{pb.description}</p>
-                <p className="mt-3 font-mono text-[11px] text-fuchsia-700/80">amp playbook install {pb.slug}</p>
+                <p className="mt-3 font-mono text-[11px] text-fuchsia-700/80">agenthub playbook install {pb.slug}</p>
               </Link>
             ))}
           </Shelf>

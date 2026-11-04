@@ -13,6 +13,7 @@ import {
   ListChecks,
   Search,
   ShieldCheck,
+  Terminal,
   Upload,
   Users,
 } from "lucide-react";
@@ -49,6 +50,7 @@ const PAGES = [
   { href: "/teams", label: "Teams", hint: "usage & membership", icon: Users },
   { href: "/favorites", label: "Favorites", hint: "saved items", icon: Heart },
   { href: "/compare", label: "Compare", hint: "side-by-side", icon: GitCompareArrows },
+  { href: "/cli", label: "CLI", hint: "install from your terminal", icon: Terminal },
 ];
 
 export function CommandPaletteProvider({ children, isAdmin }: { children: ReactNode; isAdmin: boolean }) {

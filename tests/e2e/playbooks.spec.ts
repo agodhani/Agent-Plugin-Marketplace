@@ -27,7 +27,7 @@ test.describe("playbooks", () => {
     // reload once to dodge any RSC-vs-commit race, then check the items
     await page.reload();
     // detail page: one-command install + the two picked items
-    await expect(page.getByText(`amp playbook install ${slug}`)).toBeVisible();
+    await expect(page.getByText(`agenthub playbook install ${slug}`)).toBeVisible();
     await expect(page.getByText("GitHub MCP Server").first()).toBeVisible();
     await expect(page.getByText("Code Review Assistant").first()).toBeVisible();
     await expect(page.getByText(/\d+ items/).first()).toBeVisible();

@@ -37,7 +37,7 @@ export function PlaybookForm({
       <section className="rounded-xl border border-slate-200 bg-white p-6">
         <h2 className="mb-1 font-semibold text-slate-900">Pick the plugins *</h2>
         <p className="mb-4 text-sm text-slate-500">
-          Anyone can then install the whole set with one command: <code className="rounded bg-slate-100 px-1">amp playbook install &lt;slug&gt;</code>
+          Anyone can then install the whole set with one command: <code className="rounded bg-slate-100 px-1">agenthub playbook install &lt;slug&gt;</code>
         </p>
         <PluginPicker plugins={plugins} initialSelected={initial?.items} />
       </section>

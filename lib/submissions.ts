@@ -76,7 +76,7 @@ export async function submitPlugin(user: SessionUser, formData: FormData): Promi
   const about = str(formData.get("about"));
   const readme = str(formData.get("readme"));
   const faq = str(formData.get("faq")) || "[]";
-  const install = meta.installCommand || `amp install ${slug}`;
+  const install = meta.installCommand || `agenthub install ${slug}`;
   const changelog = str(formData.get("changelog")) || "Initial release.";
   const tags = str(formData.get("tags"))
     .split(",")

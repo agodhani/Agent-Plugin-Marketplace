@@ -9,6 +9,7 @@ const COLS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/playbooks", label: "Playbooks" },
       { href: "/favorites", label: "Favorites" },
       { href: "/compare", label: "Compare" },
+      { href: "/cli", label: "AgentHub CLI" },
     ],
   },
   {

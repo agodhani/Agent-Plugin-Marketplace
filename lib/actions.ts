@@ -10,6 +10,7 @@ import { hashPassword, verifyPassword } from "./password";
 import { audit } from "./audit";
 import { loginBlocked, recordLoginFailure, clearLoginFailures } from "./rate-limit";
 import { dbStore } from "./rate-limit-store";
+import { createToken, revokeToken } from "./tokens";
 import { verificationBlockReason } from "./verification";
 import { now, slugify } from "./utils";
 
@@ -373,5 +374,34 @@ export async function setPluginVerifiedAction(pluginId: number, verified: boolea
   });
   revalidatePath("/");
   revalidatePath(`/plugins/${p.slug}`);
+  return { ok: true };
+}
+
+export async function createTokenAction(name: string): Promise<{ token?: string; error?: string }> {
+  const user = await requireUser();
+  const clean = (name ?? "").trim();
+  let res: { token: string } | { error: string } | undefined;
+  tx(() => {
+    res = createToken(user.id, clean);
+    if ("error" in res) return;
+    audit(user, "token_created", "user", user.id, user.name, { name: clean, prefix: res.token.slice(0, 12) });
+  });
+  if (!res || "error" in res) return { error: res?.error ?? "Could not create token." };
+  revalidatePath("/profile");
+  return { token: res.token };
+}
+
+export async function revokeTokenAction(id: number): Promise<{ ok?: boolean; error?: string }> {
+  const user = await requireUser();
+  if (!Number.isInteger(id)) return { error: "Invalid request." };
+  const row = getDb().prepare(`SELECT name, prefix FROM api_tokens WHERE id = ? AND user_id = ?`).get(id, user.id) as
+    | { name: string; prefix: string }
+    | undefined;
+  if (!row) return { error: "Token not found." };
+  tx(() => {
+    revokeToken(user.id, id);
+    audit(user, "token_revoked", "user", user.id, user.name, { name: row.name, prefix: row.prefix });
+  });
+  revalidatePath("/profile");
   return { ok: true };
 }

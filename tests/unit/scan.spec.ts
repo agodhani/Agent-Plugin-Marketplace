@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { computeRisk, runScans, runSecurityScan, toExtractedFiles, type ExtractedFile } from "../../lib/scan";
+import { computeRisk, runScans, runSecurityScan, runValidation, toExtractedFiles, type ExtractedFile } from "../../lib/scan";
 
 const txt = (name: string, text: string): ExtractedFile => ({ name, size: text.length, text });
 const scan = (files: ExtractedFile[], extra?: { name: string; text: string }[]) =>
@@ -92,4 +92,29 @@ test("validation: bad type, non-semver, newline install command all fail", () =>
   expect(ids).toContain("meta-type");
   expect(ids).toContain("meta-version");
   expect(ids).toContain("meta-install");
+});
+
+const find = (files: ExtractedFile[], meta: Parameters<typeof runValidation>[1], id: string) =>
+  runValidation(files, meta).find((c) => c.id === id);
+const mcpMeta = (type = "mcp") => ({ name: "T", type, version: "1.0.0", summary: "s", permissions: [] as string[] });
+
+test("manifest-server: valid server block passes", () => {
+  const files = [txt("mcp.json", JSON.stringify({ name: "x", server: { command: "node", args: ["${PLUGIN_DIR}/src/i.ts"], env: ["GITHUB_TOKEN"] } }))];
+  const c = find(files, mcpMeta(), "manifest-server");
+  expect(c?.passed).toBe(true);
+});
+
+test("manifest-server: bad env name errors", () => {
+  const files = [txt("mcp.json", JSON.stringify({ name: "x", server: { command: "node", env: ["not-ok"] } }))];
+  const c = find(files, mcpMeta(), "manifest-server");
+  expect(c?.passed).toBe(false);
+  expect(c?.severity).toBe("error");
+});
+
+test("manifest-server: mcp without server warns", () => {
+  const files = [txt("mcp.json", JSON.stringify({ name: "x" }))];
+  const c = find(files, mcpMeta(), "manifest-server");
+  expect(c?.passed).toBe(false);
+  expect(c?.severity).toBe("warning");
+  expect(c?.message).toContain("No server launch command");
 });

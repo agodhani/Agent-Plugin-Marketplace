@@ -29,7 +29,7 @@ export function PlaybookCard({ pb }: { pb: PlaybookListItem }) {
           <TypeBadge key={t} type={t} />
         ))}
         <code className="ml-auto rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-500">
-          amp playbook install {pb.slug}
+          agenthub playbook install {pb.slug}
         </code>
       </div>
     </Link>

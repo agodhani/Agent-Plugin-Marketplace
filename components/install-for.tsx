@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CopyButton } from "./copy-button";
 import { buildInstall, type Target, type TrayItem } from "./tray";
 
 const TARGETS: { id: Target; label: string }[] = [
-  { id: "amp", label: "AgentHub CLI" },
+  { id: "cli", label: "AgentHub CLI" },
   { id: "claude", label: "Claude Code" },
   { id: "cursor", label: "Cursor" },
 ];
@@ -13,14 +14,20 @@ const TARGETS: { id: Target; label: string }[] = [
 const WORKS_WITH = ["Amp", "Claude Code", "Cursor", "Devin", "Copilot"];
 
 const FILE_LABEL: Record<Target, string> = {
-  amp: "terminal",
-  claude: "~/.claude/mcp.json",
-  cursor: ".cursor/mcp.json",
+  cli: "terminal",
+  claude: "terminal",
+  cursor: "terminal",
   download: "terminal",
 };
 
+const HINT: Partial<Record<Target, string>> = {
+  cli: "Skills go to .agents/skills (read by Cursor, Devin and other Agent Skills tools)",
+  claude: ".claude/skills and .mcp.json",
+  cursor: ".cursor/skills and .cursor/mcp.json",
+};
+
 export function InstallFor({ item }: { item: TrayItem }) {
-  const [target, setTarget] = useState<Target>("amp");
+  const [target, setTarget] = useState<Target>("cli");
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const command = buildInstall(target, [item], origin);
 
@@ -45,8 +52,12 @@ export function InstallFor({ item }: { item: TrayItem }) {
           <span className="truncate font-mono text-[11px] text-slate-400">{FILE_LABEL[target]}</span>
           <CopyButton text={command} className="border-0 !bg-transparent !px-1.5 !py-0.5 !text-slate-300 hover:!bg-white/10" />
         </div>
-        <pre className="max-h-48 overflow-x-auto whitespace-pre p-3 font-mono text-[11px] leading-relaxed text-slate-100">{command}</pre>
+        <pre className="max-h-48 overflow-x-auto whitespace-pre-wrap break-words p-3 font-mono text-[11px] leading-relaxed text-slate-100">{command}</pre>
       </div>
+      {HINT[target] && <p className="mt-2 text-[11px] text-slate-400">{HINT[target]}</p>}
+      <Link href="/cli" className="mt-1 inline-block text-[11px] font-medium text-indigo-600 hover:underline">
+        First time? Set up the CLI →
+      </Link>
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Works with</span>
         {WORKS_WITH.map((a) => (
